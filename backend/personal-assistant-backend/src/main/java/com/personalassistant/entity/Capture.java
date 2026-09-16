@@ -8,31 +8,26 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "captures")
 @Getter
 @Setter
-public class Task {
+public class Capture {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private String title;
-
-    private String description;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TaskStatus status;
+    private CaptureType type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TaskPriority priority;
+    private String content;
 
-    private Instant dueDate;
+    private String sourceUrl;
 
-    private Integer estimatedMinutes;
+    private String storageUrl;
+
+    private String transcript;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -55,8 +50,4 @@ public class Task {
     protected void onUpdate() {
         updatedAt = Instant.now();
     }
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "capture_id")
-    private Capture capture;
 }

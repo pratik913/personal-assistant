@@ -90,4 +90,19 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(response);
     }
+
+    @ExceptionHandler(CaptureNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCaptureNotFound(
+            CaptureNotFoundException exception
+    ) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                exception.getMessage(),
+                Instant.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
 }

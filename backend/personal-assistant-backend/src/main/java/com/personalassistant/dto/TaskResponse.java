@@ -17,8 +17,16 @@ public class TaskResponse {
     private Integer estimatedMinutes;
     private Instant createdAt;
     private Instant updatedAt;
-
+    private UUID captureId;
     // getters and setters
+
+    public UUID getCaptureId() {
+        return captureId;
+    }
+
+    public void setCaptureId(UUID captureId) {
+        this.captureId = captureId;
+    }
 
     public UUID getId() {
         return id;

@@ -80,4 +80,18 @@ public class TaskController {
                 request
         );
     }
+
+    @GetMapping("/capture/{captureId}")
+    public List<TaskResponse> getTasksByCapture(
+            @PathVariable UUID captureId,
+            Authentication authentication
+    ) {
+
+        UUID userId = UUID.fromString(authentication.getName());
+
+        return taskService.getTasksByCapture(
+                captureId,
+                userId
+        );
+    }
 }

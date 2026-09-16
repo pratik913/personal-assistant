@@ -29,6 +29,9 @@ public class TaskMapper {
         taskResponse.setEstimatedMinutes(task.getEstimatedMinutes());
         taskResponse.setCreatedAt(task.getCreatedAt());
         taskResponse.setUpdatedAt(task.getUpdatedAt());
+        if (task.getCapture() != null) {
+            taskResponse.setCaptureId(task.getCapture().getId());
+        }
         return taskResponse;
     }
 }

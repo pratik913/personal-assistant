@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class CreateTaskRequest {
 
@@ -27,6 +28,16 @@ public class CreateTaskRequest {
 
     @Min(1)
     private Integer estimatedMinutes;
+
+    public UUID getCaptureId() {
+        return captureId;
+    }
+
+    public void setCaptureId(UUID captureId) {
+        this.captureId = captureId;
+    }
+
+    private UUID captureId;
 
     public String getTitle() {
         return title;
