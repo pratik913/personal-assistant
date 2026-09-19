@@ -1,0 +1,209 @@
+<div class="tasks-page">
+
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">TASKS</p>
+
+      <h1>Your Tasks</h1>
+
+      <p class="subtitle">
+        Everything you want to accomplish,
+        organized in one place.
+      </p>
+    </div>
+
+    <a
+      routerLink="/capture"
+      class="create-button"
+    >
+      <span>✦</span>
+      Capture New Task
+    </a>
+  </header>
+
+
+  @if (isLoading) {
+
+    <section class="state-card">
+      <div class="spinner"></div>
+
+      <h2>Loading your tasks...</h2>
+
+      <p>
+        Fetching your tasks from the database.
+      </p>
+    </section>
+
+  }
+
+
+  @if (!isLoading && errorMessage) {
+
+    <section class="state-card error-state">
+
+      <div class="state-icon">!</div>
+
+      <h2>Something went wrong</h2>
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        type="button"
+        class="retry-button"
+        (click)="loadTasks()"
+      >
+        Try Again
+      </button>
+
+    </section>
+
+  }
+
+
+  @if (!isLoading && !errorMessage && tasks.length === 0) {
+
+    <section class="state-card">
+
+      <div class="state-icon">✦</div>
+
+      <h2>No tasks yet</h2>
+
+      <p>
+        Capture something you want to accomplish
+        and MindMate will create tasks for you.
+      </p>
+
+      <a
+        routerLink="/capture"
+        class="create-button"
+      >
+        Create Your First Task
+      </a>
+
+    </section>
+
+  }
+
+
+  @if (!isLoading && !errorMessage && tasks.length > 0) {
+
+    <section class="tasks-toolbar">
+
+      <div>
+        <strong>
+          {{ tasks.length }}
+          {{ tasks.length === 1 ? 'task' : 'tasks' }}
+        </strong>
+
+        <span>
+          from your personal assistant
+        </span>
+      </div>
+
+    </section>
+
+
+    <section class="tasks-list">
+
+      @for (task of tasks; track task.id) {
+
+        <article class="task-card">
+
+          <div class="task-main">
+
+            <div
+              class="priority-dot"
+              [class]="getPriorityClass(task.priority)"
+            ></div>
+
+            <div class="task-content">
+
+              <div class="task-title-row">
+
+                <h2>
+                  {{ task.title }}
+                </h2>
+
+                <span
+                  class="priority-badge"
+                  [class]="getPriorityClass(task.priority)"
+                >
+                  {{ task.priority }}
+                </span>
+
+              </div>
+
+
+              @if (task.description) {
+
+                <p class="task-description">
+                  {{ task.description }}
+                </p>
+
+              }
+
+
+              <div class="task-meta">
+
+                <span
+                  class="status-badge"
+                  [class]="getStatusClass(task.status)"
+                >
+                  {{ task.status.replace('_', ' ') }}
+                </span>
+
+
+                @if (task.estimatedMinutes) {
+
+                  <span class="meta-item">
+                    ◷
+                    {{ task.estimatedMinutes }} min
+                  </span>
+
+                }
+
+
+                @if (task.dueDate) {
+
+                  <span class="meta-item">
+                    ◷
+                    {{ task.dueDate }}
+                  </span>
+
+                }
+
+
+                @if (task.captureId) {
+
+                  <span class="ai-badge">
+                    ✦ AI generated
+                  </span>
+
+                }
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <a
+            class="task-arrow"
+            [routerLink]="['/tasks', task.id]"
+            aria-label="View task"
+          >
+            →
+          </a>
+
+        </article>
+
+      }
+
+    </section>
+
+  }
+
+</div>

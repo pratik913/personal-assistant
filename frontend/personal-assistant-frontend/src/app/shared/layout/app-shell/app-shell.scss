@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.main-content {
+  min-height: 100vh;
+
+  margin-left: 240px;
+
+  background: var(--bg-secondary);
+
+  transition: background var(--transition);
+}
+
+@media (max-width: 800px) {
+  .main-content {
+    margin-left: 72px;
+  }
+}

@@ -1,0 +1,389 @@
+<div class="capture-page">
+
+  <!-- Header -->
+
+  <header class="capture-header">
+
+    <div>
+
+      <p class="eyebrow">
+        CAPTURE
+      </p>
+
+      <h1>
+        What's on your mind?
+      </h1>
+
+      <p class="subtitle">
+        Capture anything you don't want to forget.
+        MindMate will turn it into something actionable.
+      </p>
+
+    </div>
+
+  </header>
+
+
+  <!-- Capture card -->
+
+  <section class="capture-card">
+
+    <!-- Capture type -->
+
+    <div class="capture-tabs">
+
+      <button
+        type="button"
+        class="capture-tab"
+        [class.active]="captureType === 'TEXT'"
+        (click)="selectType('TEXT')">
+
+        <span class="tab-icon">
+          ✦
+        </span>
+
+        <span>
+          <strong>Thought</strong>
+          <small>Write anything</small>
+        </span>
+
+      </button>
+
+
+      <button
+        type="button"
+        class="capture-tab"
+        [class.active]="captureType === 'URL'"
+        (click)="selectType('URL')">
+
+        <span class="tab-icon">
+          ↗
+        </span>
+
+        <span>
+          <strong>Link</strong>
+          <small>Save a resource</small>
+        </span>
+
+      </button>
+
+    </div>
+
+
+    <!-- TEXT -->
+
+    @if (captureType === 'TEXT') {
+
+      <div class="capture-input-section">
+
+        <label for="captureContent">
+          What do you want to remember?
+        </label>
+
+        <textarea
+          id="captureContent"
+          [(ngModel)]="content"
+          rows="9"
+          maxlength="5000"
+          placeholder="Example: I found a great Docker tutorial. I want to learn Docker before my next project...">
+        </textarea>
+
+        <div class="input-footer">
+
+          <span>
+            Describe what you want to accomplish.
+          </span>
+
+          <span>
+            {{ content.length }} / 5000
+          </span>
+
+        </div>
+
+      </div>
+
+    }
+
+
+    <!-- URL -->
+
+    @if (captureType === 'URL') {
+
+      <div class="capture-input-section">
+
+        <label for="sourceUrl">
+          What did you find?
+        </label>
+
+        <input
+          id="sourceUrl"
+          type="url"
+          [(ngModel)]="sourceUrl"
+          placeholder="https://example.com/article">
+
+        <span class="field-hint">
+          Paste a link to a tutorial, article, video, or resource.
+        </span>
+
+      </div>
+
+
+      <div class="capture-input-section context-section">
+
+        <label for="urlContext">
+
+          What do you want to do with it?
+
+          <span>
+            Optional
+          </span>
+
+        </label>
+
+        <textarea
+          id="urlContext"
+          [(ngModel)]="content"
+          rows="5"
+          maxlength="5000"
+          placeholder="Example: I want to learn the concepts covered in this tutorial...">
+        </textarea>
+
+      </div>
+
+    }
+
+
+    <!-- Actions -->
+
+    <div class="capture-actions">
+
+      <div class="ai-info">
+
+        <span class="ai-sparkle">
+          ✦
+        </span>
+
+        <span>
+          AI will understand your capture and create actionable tasks.
+        </span>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="analyze-button"
+        [disabled]="isSubmitting"
+        (click)="submitCapture()">
+
+        @if (isSubmitting) {
+
+          <span class="spinner"></span>
+
+          <span>
+            Analyzing...
+          </span>
+
+        } @else {
+
+          <span>
+            Analyze with AI
+          </span>
+
+          <span class="button-arrow">
+            →
+          </span>
+
+        }
+
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- Error -->
+
+  @if (errorMessage) {
+
+    <section class="result-card error-card">
+
+      <div class="result-icon">
+        !
+      </div>
+
+      <div>
+
+        <strong>
+          Something went wrong
+        </strong>
+
+        <p>
+          {{ errorMessage }}
+        </p>
+
+      </div>
+
+    </section>
+
+  }
+
+
+  <!-- AI Result -->
+
+  @if (captureResult) {
+
+    <section class="result-card success-card">
+
+      <div class="result-header">
+
+        <div class="result-icon success">
+          ✦
+        </div>
+
+        <div>
+
+          <span class="result-label">
+            AI ANALYSIS
+          </span>
+
+          <h2>
+            Here's what I understood
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      @if (captureResult.aiSummary) {
+
+        <div class="summary">
+
+          <span>
+            Summary
+          </span>
+
+          <p>
+            {{ captureResult.aiSummary }}
+          </p>
+
+        </div>
+
+      }
+
+
+      <div class="result-status">
+
+        <span>
+          Status
+        </span>
+
+        <strong>
+          {{ captureResult.aiStatus }}
+        </strong>
+
+      </div>
+
+    </section>
+
+  }
+
+
+  <!-- Examples -->
+
+  <section class="examples-section">
+
+    <div class="section-heading">
+
+      <h2>
+        Need inspiration?
+      </h2>
+
+      <p>
+        Try capturing something like this.
+      </p>
+
+    </div>
+
+
+    <div class="examples-grid">
+
+      <button
+        type="button"
+        class="example-card"
+        (click)="useExample('I want to learn Docker before starting my next project.')">
+
+        <span class="example-icon">
+          ◈
+        </span>
+
+        <div>
+
+          <strong>
+            Learning goal
+          </strong>
+
+          <span>
+            "I want to learn Docker before my next project."
+          </span>
+
+        </div>
+
+      </button>
+
+
+      <button
+        type="button"
+        class="example-card"
+        (click)="useExample('I need to prepare for my system design interview next week.')">
+
+        <span class="example-icon">
+          ◎
+        </span>
+
+        <div>
+
+          <strong>
+            Preparation
+          </strong>
+
+          <span>
+            "I need to prepare for my system design interview."
+          </span>
+
+        </div>
+
+      </button>
+
+
+      <button
+        type="button"
+        class="example-card"
+        (click)="useExample('I want to start going to the gym consistently three times a week.')">
+
+        <span class="example-icon">
+          ◇
+        </span>
+
+        <div>
+
+          <strong>
+            Personal goal
+          </strong>
+
+          <span>
+            "I want to start going to the gym consistently."
+          </span>
+
+        </div>
+
+      </button>
+
+    </div>
+
+  </section>
+
+
+</div>

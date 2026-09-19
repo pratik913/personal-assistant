@@ -1,1 +1,92 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f7fb;
+  --bg-tertiary: #f0f1f6;
+
+  --surface: #ffffff;
+  --surface-hover: #f7f7fb;
+
+  --text-primary: #172033;
+  --text-secondary: #697386;
+  --text-muted: #929bad;
+
+  --border: #e1e4eb;
+
+  --accent: #6d5dfc;
+  --accent-hover: #5d4ced;
+  --accent-soft: #eeebff;
+
+  --success: #22b573;
+  --warning: #f2a900;
+  --danger: #ef476f;
+
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e7e9ef;
+
+  --shadow-sm: 0 2px 8px rgba(25, 32, 56, 0.06);
+  --shadow-md: 0 8px 30px rgba(25, 32, 56, 0.08);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --transition: 180ms ease;
+}
+
+[data-theme='dark'] {
+  --bg-primary: #0c1424;
+  --bg-secondary: #101a2c;
+  --bg-tertiary: #162238;
+
+  --surface: #141f32;
+  --surface-hover: #1a2940;
+
+  --text-primary: #f5f7ff;
+  --text-secondary: #a8b2c5;
+  --text-muted: #77849b;
+
+  --border: #26344b;
+
+  --accent: #7c6cff;
+  --accent-hover: #8b7dff;
+  --accent-soft: #282451;
+
+  --success: #35c98a;
+  --warning: #f5b942;
+  --danger: #ff5c7c;
+
+  --sidebar-bg: #0d1728;
+  --sidebar-border: #26344b;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}

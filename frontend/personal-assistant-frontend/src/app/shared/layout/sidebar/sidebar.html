@@ -1,0 +1,83 @@
+<aside class="sidebar">
+
+  <div class="brand">
+    <div class="brand-logo">✦</div>
+
+    <span>MindMate</span>
+  </div>
+
+
+  <nav class="navigation">
+
+    @for (item of navigationItems; track item.route) {
+
+      <a
+        class="nav-item"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }">
+
+        <span class="nav-icon">
+          {{ item.icon }}
+        </span>
+
+        <span>
+          {{ item.label }}
+        </span>
+
+      </a>
+
+    }
+
+  </nav>
+
+
+  <div class="sidebar-bottom">
+
+    <a
+      class="nav-item"
+      routerLink="/settings"
+      routerLinkActive="active">
+
+      <span class="nav-icon">⚙</span>
+
+      <span>Settings</span>
+
+    </a>
+
+
+    <button
+      class="theme-button"
+      type="button"
+      (click)="themeService.toggle()">
+
+      @if (themeService.theme() === 'light') {
+        <span>☾</span>
+        <span>Dark mode</span>
+      } @else {
+        <span>☀</span>
+        <span>Light mode</span>
+      }
+
+    </button>
+
+
+    <div class="profile">
+
+      <div class="avatar">
+        P
+      </div>
+
+      <div class="profile-info">
+
+        <strong>Pratik</strong>
+
+        <span>Personal Assistant</span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</aside>

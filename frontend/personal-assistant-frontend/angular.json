@@ -6,6 +6,11 @@
     "analytics": false
   },
   "newProjectRoot": "projects",
+  "schematics": {
+    "@schematics/angular:component": {
+      "style": "scss"
+    }
+  },
   "projects": {
     "personal-assistant-frontend": {
       "projectType": "application",

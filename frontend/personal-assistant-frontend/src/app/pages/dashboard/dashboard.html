@@ -1,0 +1,294 @@
+<div class="dashboard-page">
+
+  <!-- Header -->
+
+  <header class="dashboard-header">
+
+    <div>
+      <p class="eyebrow">OVERVIEW</p>
+
+      <h1>
+        Good evening, Pratik 👋
+      </h1>
+
+      <p class="subtitle">
+        Here's what's happening today.
+      </p>
+    </div>
+
+    <div class="current-date">
+      <span>Wednesday</span>
+      <strong>Sep 17, 2026</strong>
+    </div>
+
+  </header>
+
+
+  <!-- Statistics -->
+
+  <section class="stats-grid">
+
+    @for (stat of stats; track stat.label) {
+
+      <div
+        class="stat-card"
+        [class]="stat.type">
+
+        <span class="stat-label">
+          {{ stat.label }}
+        </span>
+
+        <strong class="stat-value">
+          {{ stat.value }}
+        </strong>
+
+      </div>
+
+    }
+
+  </section>
+
+
+  <!-- Main dashboard grid -->
+
+  <div class="dashboard-grid">
+
+    <!-- Today's tasks -->
+
+    <section class="dashboard-card tasks-card">
+
+      <div class="card-header">
+
+        <div>
+          <h2>Today's Tasks</h2>
+          <p>Stay focused on what matters.</p>
+        </div>
+
+        <a routerLink="/tasks">
+          View All
+        </a>
+
+      </div>
+
+
+      <div class="task-list">
+
+        @for (task of todaysTasks; track task.title) {
+
+          <div class="task-row">
+
+            <div
+              class="task-status"
+              [class.completed]="task.status === 'COMPLETED'"
+              [class.in-progress]="task.status === 'IN_PROGRESS'">
+            </div>
+
+
+            <div class="task-content">
+
+              <div class="task-title-row">
+
+                <strong>
+                  {{ task.title }}
+                </strong>
+
+                <span
+                  class="priority"
+                  [class.high]="task.priority === 'HIGH'"
+                  [class.medium]="task.priority === 'MEDIUM'"
+                  [class.low]="task.priority === 'LOW'">
+
+                  {{ task.priority }}
+
+                </span>
+
+              </div>
+
+              <p>
+                {{ task.description }}
+              </p>
+
+            </div>
+
+
+            <span class="task-time">
+              {{ task.time }}
+            </span>
+
+          </div>
+
+        }
+
+      </div>
+
+    </section>
+
+
+    <!-- Quick Actions -->
+
+    <section class="dashboard-card quick-actions-card">
+
+      <div class="card-header">
+
+        <div>
+          <h2>Quick Actions</h2>
+          <p>Get things done faster.</p>
+        </div>
+
+      </div>
+
+
+      <div class="quick-actions">
+
+        <a
+          routerLink="/capture"
+          class="quick-action primary">
+
+          <span class="action-icon">✦</span>
+
+          <div>
+            <strong>Capture Something</strong>
+            <span>Let AI organize your thought</span>
+          </div>
+
+          <span class="arrow">→</span>
+
+        </a>
+
+
+        <a
+          routerLink="/tasks"
+          class="quick-action">
+
+          <span class="action-icon">✓</span>
+
+          <div>
+            <strong>Add Task</strong>
+            <span>Create a task manually</span>
+          </div>
+
+          <span class="arrow">→</span>
+
+        </a>
+
+
+        <a
+          routerLink="/planner"
+          class="quick-action">
+
+          <span class="action-icon">▦</span>
+
+          <div>
+            <strong>Open Planner</strong>
+            <span>Plan your day</span>
+          </div>
+
+          <span class="arrow">→</span>
+
+        </a>
+
+
+        <a
+          routerLink="/goals"
+          class="quick-action">
+
+          <span class="action-icon">◎</span>
+
+          <div>
+            <strong>Set a Goal</strong>
+            <span>Work toward something bigger</span>
+          </div>
+
+          <span class="arrow">→</span>
+
+        </a>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <!-- Upcoming -->
+
+  <section class="dashboard-card upcoming-card">
+
+    <div class="card-header">
+
+      <div>
+        <h2>Coming Up</h2>
+        <p>Don't forget what's next.</p>
+      </div>
+
+      <a routerLink="/schedule">
+        Open Schedule
+      </a>
+
+    </div>
+
+
+    <div class="upcoming-list">
+
+      @for (task of upcomingTasks; track task.title) {
+
+        <div class="upcoming-item">
+
+          <div class="upcoming-icon">
+            ○
+          </div>
+
+          <div class="upcoming-content">
+
+            <strong>
+              {{ task.title }}
+            </strong>
+
+            <span>
+              {{ task.time }}
+            </span>
+
+          </div>
+
+          <span
+            class="priority"
+            [class.medium]="task.priority === 'MEDIUM'"
+            [class.low]="task.priority === 'LOW'">
+
+            {{ task.priority }}
+
+          </span>
+
+        </div>
+
+      }
+
+    </div>
+
+  </section>
+
+
+  <!-- AI insight -->
+
+  <section class="ai-insight">
+
+    <div class="ai-icon">
+      ✦
+    </div>
+
+    <div>
+
+      <strong>
+        Small steps, consistent progress.
+      </strong>
+
+      <p>
+        Your highest-priority task is still in progress.
+        Consider finishing it before starting something new.
+      </p>
+
+    </div>
+
+  </section>
+
+</div>
