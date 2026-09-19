@@ -15,5 +15,5 @@ public class AiTestController {
     public AiTestController(AiService aiService) {
         this.aiService = aiService;
     }
-    
+
 }

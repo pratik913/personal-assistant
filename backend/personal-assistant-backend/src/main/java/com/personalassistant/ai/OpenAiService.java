@@ -34,9 +34,23 @@ public class OpenAiService implements AiService {
         - Keep task titles concise and actionable.
         - Provide a useful description for each task.
         - Estimate a realistic amount of time in minutes.
-        - If the capture does not represent an actionable intention,
-          return an empty task list.
-        - Return only the requested structured output.
+        - Assign a priority to every task.
+
+        Priority rules:
+        - HIGH: Important or urgent tasks, tasks with explicit deadlines,
+          or tasks where delaying completion could have a significant
+          negative impact.
+        - MEDIUM: Normal meaningful work that should be completed but
+          is not urgent or time-sensitive.
+        - LOW: Optional, exploratory, nice-to-have, or low-impact tasks.
+
+        Do not assign HIGH priority merely because a task sounds useful.
+        Use the context of the user's capture when deciding priority.
+
+        If the capture does not represent an actionable intention,
+        return an empty task list.
+
+        Return only the requested structured output.
         """;
 
     private final OpenAIClient client;

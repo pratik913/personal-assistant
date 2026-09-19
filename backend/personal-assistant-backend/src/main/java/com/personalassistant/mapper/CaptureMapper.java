@@ -1,7 +1,7 @@
 package com.personalassistant.mapper;
 
-import com.personalassistant.dto.CreateCaptureRequest;
 import com.personalassistant.dto.CaptureResponse;
+import com.personalassistant.dto.CreateCaptureRequest;
 import com.personalassistant.entity.Capture;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +30,7 @@ public class CaptureMapper {
                 capture.getTranscript(),
                 capture.getAiStatus(),
                 capture.getAiError(),
+                capture.getAiSummary(),       // NEW
                 capture.getCreatedAt(),
                 capture.getUpdatedAt()
         );

@@ -15,6 +15,7 @@ public record CaptureResponse(
         String transcript,
         AiProcessingStatus aiStatus,
         String aiError,
+        String aiSummary,
         Instant createdAt,
         Instant updatedAt
 ) {}

@@ -248,7 +248,10 @@ public class TaskService {
                             suggestion.estimatedMinutes()
                     );
                     task.setStatus(TaskStatus.TODO);
-                    task.setPriority(TaskPriority.MEDIUM);
+
+                    // Use priority suggested by AI
+                    task.setPriority(suggestion.priority());
+
                     task.setUser(user);
                     task.setCapture(capture);
 

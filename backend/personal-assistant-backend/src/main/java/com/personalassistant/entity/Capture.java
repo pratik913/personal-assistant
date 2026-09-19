@@ -47,6 +47,9 @@ public class Capture {
     @Column(length = 2000)
     private String aiError;
 
+    @Column(length = 5000)
+    private String aiSummary;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
