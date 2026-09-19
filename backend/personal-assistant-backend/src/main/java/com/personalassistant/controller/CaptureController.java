@@ -5,6 +5,7 @@ import com.personalassistant.dto.CreateCaptureRequest;
 import com.personalassistant.service.CaptureService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -73,5 +74,22 @@ public class CaptureController {
                 captureId,
                 userId
         );
+    }
+
+    @PostMapping("/{captureId}/retry-ai")
+    public ResponseEntity<CaptureResponse> retryAi(
+            @PathVariable UUID captureId,
+            Authentication authentication
+    ) {
+
+        UUID userId = UUID.fromString(authentication.getName());
+
+        CaptureResponse response =
+                captureService.retryAiProcessing(
+                        captureId,
+                        userId
+                );
+
+        return ResponseEntity.ok(response);
     }
 }

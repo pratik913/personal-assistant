@@ -4,7 +4,11 @@ import com.personalassistant.dto.AiCaptureAnalysis;
 import com.personalassistant.dto.CreateTaskRequest;
 import com.personalassistant.dto.TaskResponse;
 import com.personalassistant.dto.UpdateTaskRequest;
-import com.personalassistant.entity.*;
+import com.personalassistant.entity.Capture;
+import com.personalassistant.entity.Task;
+import com.personalassistant.entity.TaskPriority;
+import com.personalassistant.entity.TaskStatus;
+import com.personalassistant.entity.User;
 import com.personalassistant.exception.CaptureNotFoundException;
 import com.personalassistant.exception.TaskNotFoundException;
 import com.personalassistant.exception.UserNotFoundException;
@@ -61,7 +65,9 @@ public class TaskService {
                             userId
                     )
                     .orElseThrow(() ->
-                            new CaptureNotFoundException("Capture not found")
+                            new CaptureNotFoundException(
+                                    "Capture not found"
+                            )
                     );
 
             task.setCapture(capture);
@@ -81,7 +87,6 @@ public class TaskService {
                 .toList();
     }
 
-
     public void deleteTask(
             UUID taskId,
             UUID userId
@@ -90,7 +95,9 @@ public class TaskService {
         Task task = taskRepository
                 .findByIdAndUserId(taskId, userId)
                 .orElseThrow(() ->
-                        new TaskNotFoundException("Task not found")
+                        new TaskNotFoundException(
+                                "Task not found"
+                        )
                 );
 
         taskRepository.delete(task);
@@ -105,7 +112,9 @@ public class TaskService {
         Task task = taskRepository
                 .findByIdAndUserId(taskId, userId)
                 .orElseThrow(() ->
-                        new TaskNotFoundException("Task not found")
+                        new TaskNotFoundException(
+                                "Task not found"
+                        )
                 );
 
         return taskMapper.toResponse(task);
@@ -120,7 +129,9 @@ public class TaskService {
         Task task = taskRepository
                 .findByIdAndUserId(taskId, userId)
                 .orElseThrow(() ->
-                        new TaskNotFoundException("Task not found")
+                        new TaskNotFoundException(
+                                "Task not found"
+                        )
                 );
 
         if (request.getTitle() != null) {
@@ -144,7 +155,9 @@ public class TaskService {
         }
 
         if (request.getEstimatedMinutes() != null) {
-            task.setEstimatedMinutes(request.getEstimatedMinutes());
+            task.setEstimatedMinutes(
+                    request.getEstimatedMinutes()
+            );
         }
 
         Task updatedTask = taskRepository.save(task);
@@ -159,13 +172,21 @@ public class TaskService {
     ) {
 
         Capture capture = captureRepository
-                .findByIdAndUserId(captureId, userId)
+                .findByIdAndUserId(
+                        captureId,
+                        userId
+                )
                 .orElseThrow(() ->
-                        new CaptureNotFoundException("Capture not found")
+                        new CaptureNotFoundException(
+                                "Capture not found"
+                        )
                 );
 
         return taskRepository
-                .findByCaptureIdAndUserId(captureId, userId)
+                .findByCaptureIdAndUserId(
+                        captureId,
+                        userId
+                )
                 .stream()
                 .map(taskMapper::toResponse)
                 .toList();
@@ -179,15 +200,40 @@ public class TaskService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
-                        new UserNotFoundException("User not found")
+                        new UserNotFoundException(
+                                "User not found"
+                        )
                 );
 
         Capture capture = captureRepository
-                .findByIdAndUserId(captureId, userId)
+                .findByIdAndUserId(
+                        captureId,
+                        userId
+                )
                 .orElseThrow(() ->
-                        new CaptureNotFoundException("Capture not found")
+                        new CaptureNotFoundException(
+                                "Capture not found"
+                        )
                 );
 
+        // Check whether AI tasks already exist
+        List<Task> existingAiTasks =
+                taskRepository
+                        .findByCaptureIdAndUserIdAndAiGeneratedTrue(
+                                captureId,
+                                userId
+                        );
+
+        // Prevent duplicate AI-generated tasks
+        if (!existingAiTasks.isEmpty()) {
+
+            return existingAiTasks
+                    .stream()
+                    .map(taskMapper::toResponse)
+                    .toList();
+        }
+
+        // Create new AI-generated tasks
         return analysis.tasks()
                 .stream()
                 .map(suggestion -> {
@@ -195,16 +241,19 @@ public class TaskService {
                     Task task = new Task();
 
                     task.setTitle(suggestion.title());
-                    task.setDescription(suggestion.description());
+                    task.setDescription(
+                            suggestion.description()
+                    );
                     task.setEstimatedMinutes(
                             suggestion.estimatedMinutes()
                     );
-
                     task.setStatus(TaskStatus.TODO);
                     task.setPriority(TaskPriority.MEDIUM);
-
                     task.setUser(user);
                     task.setCapture(capture);
+
+                    // Mark this task as AI-generated
+                    task.setAiGenerated(true);
 
                     return taskRepository.save(task);
                 })

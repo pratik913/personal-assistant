@@ -15,11 +15,5 @@ public class AiTestController {
     public AiTestController(AiService aiService) {
         this.aiService = aiService;
     }
-
-    @PostMapping("/analyze")
-    public AiCaptureAnalysis analyze(
-            @Valid @RequestBody AiTestRequest request
-    ) {
-        return aiService.analyzeCapture(request.content());
-    }
+    
 }

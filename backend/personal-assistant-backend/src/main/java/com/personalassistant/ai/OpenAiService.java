@@ -6,12 +6,13 @@ import com.openai.models.ChatModel;
 import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.StructuredResponseCreateParams;
 import com.personalassistant.dto.AiCaptureAnalysis;
+import com.personalassistant.exception.AiErrorType;
+import com.personalassistant.exception.AiProcessingException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OpenAiService implements AiService {
 
-    private final OpenAIClient client;
     private static final String SYSTEM_INSTRUCTION = """
         You are an AI productivity assistant.
 
@@ -37,6 +38,9 @@ public class OpenAiService implements AiService {
           return an empty task list.
         - Return only the requested structured output.
         """;
+
+    private final OpenAIClient client;
+
     public OpenAiService() {
         this.client = OpenAIOkHttpClient.fromEnv();
     }
@@ -44,30 +48,80 @@ public class OpenAiService implements AiService {
     @Override
     public AiCaptureAnalysis analyzeCapture(String content) {
 
-        StructuredResponseCreateParams<AiCaptureAnalysis> params =
-                ResponseCreateParams.builder()
-                        .input("""
-                            %s
+        try {
 
-                            User capture:
-                            %s
-                            """.formatted(SYSTEM_INSTRUCTION, content))
-                        .model(ChatModel.GPT_5)
-                        .text(AiCaptureAnalysis.class)
-                        .build();
+            StructuredResponseCreateParams<AiCaptureAnalysis> params =
+                    ResponseCreateParams.builder()
+                            .input("""
+                                %s
 
-        return client.responses()
-                .create(params)
-                .output()
-                .stream()
-                .flatMap(item -> item.message().stream())
-                .flatMap(message -> message.content().stream())
-                .flatMap(contentItem -> contentItem.outputText().stream())
-                .findFirst()
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "AI returned no structured output"
-                        )
-                );
+                                User capture:
+                                %s
+                                """.formatted(
+                                    SYSTEM_INSTRUCTION,
+                                    content
+                            ))
+                            .model(ChatModel.GPT_5)
+                            .text(AiCaptureAnalysis.class)
+                            .build();
+
+            return client.responses()
+                    .create(params)
+                    .output()
+                    .stream()
+                    .flatMap(item -> item.message().stream())
+                    .flatMap(message -> message.content().stream())
+                    .flatMap(contentItem -> contentItem.outputText().stream())
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new AiProcessingException(
+                                    AiErrorType.INVALID_RESPONSE,
+                                    "AI returned an invalid response."
+                            )
+                    );
+
+        } catch (AiProcessingException exception) {
+
+            throw exception;
+
+        } catch (RuntimeException exception) {
+
+            throw classifyException(exception);
+        }
+    }
+
+    private AiProcessingException classifyException(
+            RuntimeException exception
+    ) {
+
+        String message = exception.getMessage();
+
+        if (message != null &&
+                message.contains("429")) {
+
+            return new AiProcessingException(
+                    AiErrorType.RATE_LIMITED,
+                    "AI service is busy. Please try again later.",
+                    exception
+            );
+        }
+
+        if (message != null &&
+                (message.contains("timeout")
+                        || message.contains("timed out")
+                        || message.contains("connection"))) {
+
+            return new AiProcessingException(
+                    AiErrorType.TEMPORARY,
+                    "AI service is temporarily unavailable. Please try again.",
+                    exception
+            );
+        }
+
+        return new AiProcessingException(
+                AiErrorType.TEMPORARY,
+                "AI processing failed. Please try again later.",
+                exception
+        );
     }
 }

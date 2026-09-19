@@ -1,5 +1,6 @@
 package com.personalassistant.dto;
 
+import com.personalassistant.entity.AiProcessingStatus;
 import com.personalassistant.entity.CaptureType;
 
 import java.time.Instant;
@@ -12,7 +13,8 @@ public record CaptureResponse(
         String sourceUrl,
         String storageUrl,
         String transcript,
+        AiProcessingStatus aiStatus,
+        String aiError,
         Instant createdAt,
         Instant updatedAt
-) {
-}
+) {}

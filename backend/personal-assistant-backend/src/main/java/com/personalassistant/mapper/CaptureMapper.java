@@ -28,6 +28,8 @@ public class CaptureMapper {
                 capture.getSourceUrl(),
                 capture.getStorageUrl(),
                 capture.getTranscript(),
+                capture.getAiStatus(),
+                capture.getAiError(),
                 capture.getCreatedAt(),
                 capture.getUpdatedAt()
         );

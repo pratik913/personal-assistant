@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -17,9 +18,10 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(length = 5000)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -30,9 +32,12 @@ public class Task {
     @Column(nullable = false)
     private TaskPriority priority;
 
-    private Instant dueDate;
+    private LocalDate dueDate;
 
     private Integer estimatedMinutes;
+
+    @Column(nullable = false)
+    private boolean aiGenerated = false;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -43,6 +48,10 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "capture_id")
+    private Capture capture;
 
     @PrePersist
     protected void onCreate() {
@@ -55,8 +64,4 @@ public class Task {
     protected void onUpdate() {
         updatedAt = Instant.now();
     }
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "capture_id")
-    private Capture capture;
 }

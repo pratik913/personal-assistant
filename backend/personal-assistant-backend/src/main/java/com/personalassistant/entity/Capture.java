@@ -39,6 +39,14 @@ public class Capture {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AiProcessingStatus aiStatus = AiProcessingStatus.PENDING;
+
+
+    @Column(length = 2000)
+    private String aiError;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
@@ -50,4 +58,7 @@ public class Capture {
     protected void onUpdate() {
         updatedAt = Instant.now();
     }
+
+
+
 }
