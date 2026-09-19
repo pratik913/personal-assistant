@@ -25,6 +25,15 @@ export interface TaskResponse {
   captureId: string | null;
 }
 
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+  estimatedMinutes?: number | null;
+  status?: TaskStatus;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -43,6 +52,16 @@ export class TaskService {
   getTask(id: string): Observable<TaskResponse> {
     return this.http.get<TaskResponse>(
       `${this.baseUrl}/${id}`
+    );
+  }
+
+  updateTask(
+    id: string,
+    request: UpdateTaskRequest
+  ): Observable<TaskResponse> {
+    return this.http.patch<TaskResponse>(
+      `${this.baseUrl}/${id}`,
+      request
     );
   }
 

@@ -34,9 +34,13 @@
 
     <section class="state-card error-state">
 
-      <div class="state-icon">!</div>
+      <div class="state-icon">
+        !
+      </div>
 
-      <h2>Unable to load task</h2>
+      <h2>
+        Unable to load task
+      </h2>
 
       <p>
         {{ errorMessage }}
@@ -58,6 +62,10 @@
 
     <section class="task-card">
 
+      <!-- ========================= -->
+      <!-- TASK HEADER -->
+      <!-- ========================= -->
+
       <div class="task-top">
 
         <div>
@@ -66,153 +74,416 @@
             TASK DETAILS
           </div>
 
-          <h1>
-            {{ task.title }}
-          </h1>
+          @if (!isEditing) {
+
+            <h1>
+              {{ task.title }}
+            </h1>
+
+          }
+
+        </div>
+
+
+        <div class="task-actions">
+
+          @if (task.captureId) {
+
+            <span class="ai-badge">
+              ✦ AI generated
+            </span>
+
+          }
+
+
+          @if (!isEditing) {
+
+            <button
+              type="button"
+              class="edit-button"
+              (click)="startEditing()"
+            >
+              Edit Task
+            </button>
+
+          }
+
+        </div>
+
+      </div>
+
+
+      <!-- ========================= -->
+      <!-- EDIT FORM -->
+      <!-- ========================= -->
+
+      @if (isEditing) {
+
+        <form
+          class="edit-form"
+          [formGroup]="taskForm"
+          (ngSubmit)="saveTask()"
+        >
+
+          <!-- TITLE -->
+
+          <div class="form-field">
+
+            <label for="title">
+              Title
+            </label>
+
+            <input
+              id="title"
+              type="text"
+              formControlName="title"
+              placeholder="Task title"
+            >
+
+            @if (
+              taskForm.controls.title.invalid &&
+              taskForm.controls.title.touched
+            ) {
+
+              <span class="field-error">
+                Title is required and must be
+                200 characters or less.
+              </span>
+
+            }
+
+          </div>
+
+
+          <!-- DESCRIPTION -->
+
+          <div class="form-field">
+
+            <label for="description">
+              Description
+            </label>
+
+            <textarea
+              id="description"
+              rows="6"
+              formControlName="description"
+              placeholder="Describe the task..."
+            ></textarea>
+
+            @if (
+              taskForm.controls.description.invalid &&
+              taskForm.controls.description.touched
+            ) {
+
+              <span class="field-error">
+                Description must be
+                5000 characters or less.
+              </span>
+
+            }
+
+          </div>
+
+
+          <!-- PRIORITY / DATE / TIME -->
+
+          <div class="form-grid">
+
+            <div class="form-field">
+
+              <label for="priority">
+                Priority
+              </label>
+
+              <select
+                id="priority"
+                formControlName="priority"
+              >
+
+                <option value="LOW">
+                  Low
+                </option>
+
+                <option value="MEDIUM">
+                  Medium
+                </option>
+
+                <option value="HIGH">
+                  High
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-field">
+
+              <label for="dueDate">
+                Due Date
+              </label>
+
+              <input
+                id="dueDate"
+                type="date"
+                formControlName="dueDate"
+              >
+
+            </div>
+
+
+            <div class="form-field">
+
+              <label for="estimatedMinutes">
+                Estimated Minutes
+              </label>
+
+              <input
+                id="estimatedMinutes"
+                type="number"
+                min="1"
+                formControlName="estimatedMinutes"
+                placeholder="e.g. 60"
+              >
+
+              @if (
+                taskForm.controls.estimatedMinutes.invalid &&
+                taskForm.controls.estimatedMinutes.touched
+              ) {
+
+                <span class="field-error">
+                  Estimated time must be
+                  at least 1 minute.
+                </span>
+
+              }
+
+            </div>
+
+          </div>
+
+
+          <!-- ERROR -->
+
+          @if (saveError) {
+
+            <div class="form-message form-error">
+              {{ saveError }}
+            </div>
+
+          }
+
+
+          <!-- SUCCESS -->
+
+          @if (saveSuccess) {
+
+            <div class="form-message form-success">
+              {{ saveSuccess }}
+            </div>
+
+          }
+
+
+          <!-- FORM ACTIONS -->
+
+          <div class="form-actions">
+
+            <button
+              type="button"
+              class="cancel-button"
+              [disabled]="isSaving"
+              (click)="cancelEditing()"
+            >
+              Cancel
+            </button>
+
+
+            <button
+              type="submit"
+              class="save-button"
+              [disabled]="isSaving"
+            >
+
+              @if (isSaving) {
+
+                <span class="button-spinner"></span>
+
+                Saving...
+
+              } @else {
+
+                Save Changes
+
+              }
+
+            </button>
+
+          </div>
+
+        </form>
+
+      }
+
+
+      <!-- ========================= -->
+      <!-- READ-ONLY VIEW -->
+      <!-- ========================= -->
+
+      @if (!isEditing) {
+
+        @if (task.description) {
+
+          <div class="description-section">
+
+            <span class="section-label">
+              DESCRIPTION
+            </span>
+
+            <p>
+              {{ task.description }}
+            </p>
+
+          </div>
+
+        }
+
+
+        <div class="details-grid">
+
+          <!-- STATUS -->
+
+          <div class="detail-item">
+
+            <span class="detail-label">
+              STATUS
+            </span>
+
+            <span
+              class="status-badge"
+              [class]="getStatusClass(task.status)"
+            >
+              {{ task.status.replace('_', ' ') }}
+            </span>
+
+          </div>
+
+
+          <!-- PRIORITY -->
+
+          <div class="detail-item">
+
+            <span class="detail-label">
+              PRIORITY
+            </span>
+
+            <span
+              class="priority-badge"
+              [class]="getPriorityClass(task.priority)"
+            >
+              {{ task.priority }}
+            </span>
+
+          </div>
+
+
+          <!-- ESTIMATED TIME -->
+
+          <div class="detail-item">
+
+            <span class="detail-label">
+              ESTIMATED TIME
+            </span>
+
+            <strong>
+
+              @if (task.estimatedMinutes) {
+
+                {{ task.estimatedMinutes }}
+                minutes
+
+              } @else {
+
+                Not specified
+
+              }
+
+            </strong>
+
+          </div>
+
+
+          <!-- DUE DATE -->
+
+          <div class="detail-item">
+
+            <span class="detail-label">
+              DUE DATE
+            </span>
+
+            <strong>
+              {{ task.dueDate || 'No due date' }}
+            </strong>
+
+          </div>
+
+
+          <!-- CREATED -->
+
+          <div class="detail-item">
+
+            <span class="detail-label">
+              CREATED
+            </span>
+
+            <strong>
+              {{ task.createdAt | date:'medium' }}
+            </strong>
+
+          </div>
+
+
+          <!-- UPDATED -->
+
+          <div class="detail-item">
+
+            <span class="detail-label">
+              LAST UPDATED
+            </span>
+
+            <strong>
+              {{ task.updatedAt | date:'medium' }}
+            </strong>
+
+          </div>
 
         </div>
 
 
         @if (task.captureId) {
 
-          <span class="ai-badge">
-            ✦ AI generated
-          </span>
+          <div class="source-section">
+
+            <div class="source-icon">
+              ✦
+            </div>
+
+            <div>
+
+              <strong>
+                Created from an AI capture
+              </strong>
+
+              <p>
+                This task was generated by MindMate
+                from one of your captures.
+              </p>
+
+            </div>
+
+          </div>
 
         }
-
-      </div>
-
-
-      @if (task.description) {
-
-        <div class="description-section">
-
-          <span class="section-label">
-            DESCRIPTION
-          </span>
-
-          <p>
-            {{ task.description }}
-          </p>
-
-        </div>
-
-      }
-
-
-      <div class="details-grid">
-
-        <div class="detail-item">
-
-          <span class="detail-label">
-            STATUS
-          </span>
-
-          <span
-            class="status-badge"
-            [class]="getStatusClass(task.status)"
-          >
-            {{ task.status.replace('_', ' ') }}
-          </span>
-
-        </div>
-
-
-        <div class="detail-item">
-
-          <span class="detail-label">
-            PRIORITY
-          </span>
-
-          <span
-            class="priority-badge"
-            [class]="getPriorityClass(task.priority)"
-          >
-            {{ task.priority }}
-          </span>
-
-        </div>
-
-
-        <div class="detail-item">
-
-          <span class="detail-label">
-            ESTIMATED TIME
-          </span>
-
-          <strong>
-            @if (task.estimatedMinutes) {
-              {{ task.estimatedMinutes }} minutes
-            } @else {
-              Not specified
-            }
-          </strong>
-
-        </div>
-
-
-        <div class="detail-item">
-
-          <span class="detail-label">
-            DUE DATE
-          </span>
-
-          <strong>
-            {{ task.dueDate || 'No due date' }}
-          </strong>
-
-        </div>
-
-
-        <div class="detail-item">
-
-          <span class="detail-label">
-            CREATED
-          </span>
-
-          <strong>
-            {{ task.createdAt | date:'medium' }}
-          </strong>
-
-        </div>
-
-
-        <div class="detail-item">
-
-          <span class="detail-label">
-            LAST UPDATED
-          </span>
-
-          <strong>
-            {{ task.updatedAt | date:'medium' }}
-          </strong>
-
-        </div>
-
-      </div>
-
-
-      @if (task.captureId) {
-
-        <div class="source-section">
-
-          <div class="source-icon">
-            ✦
-          </div>
-
-          <div>
-            <strong>
-              Created from an AI capture
-            </strong>
-
-            <p>
-              This task was generated by MindMate
-              from one of your captures.
-            </p>
-          </div>
-
-        </div>
 
       }
 
