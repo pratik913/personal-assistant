@@ -1,38 +1,16 @@
-<div class="task-details-page">
+@if (isLoading) {
 
-  <header class="details-header">
+  <section class="page">
+    <div class="state-card">
+      <div class="loading-spinner"></div>
+      <p>Loading task...</p>
+    </div>
+  </section>
 
-    <a
-      routerLink="/tasks"
-      class="back-button"
-    >
-      ←
-      <span>Back to Tasks</span>
-    </a>
+} @else if (errorMessage) {
 
-  </header>
-
-
-  @if (isLoading) {
-
-    <section class="state-card">
-
-      <div class="spinner"></div>
-
-      <h2>Loading task...</h2>
-
-      <p>
-        Fetching task details from the database.
-      </p>
-
-    </section>
-
-  }
-
-
-  @if (!isLoading && errorMessage) {
-
-    <section class="state-card error-state">
+  <section class="page">
+    <div class="state-card error-state">
 
       <div class="state-icon">
         !
@@ -48,86 +26,118 @@
 
       <a
         routerLink="/tasks"
-        class="primary-button"
+        class="secondary-button"
       >
         Back to Tasks
       </a>
 
-    </section>
+    </div>
+  </section>
 
-  }
+} @else if (task) {
 
+  <section class="page">
 
-  @if (!isLoading && !errorMessage && task) {
+    <!-- =========================
+         PAGE HEADER
+         ========================= -->
 
-    <section class="task-card">
+    <header class="page-header">
 
-      <!-- ========================= -->
-      <!-- TASK HEADER -->
-      <!-- ========================= -->
+      <div class="header-content">
 
-      <div class="task-top">
+        <a
+          routerLink="/tasks"
+          class="back-link"
+        >
+          ← Back to Tasks
+        </a>
 
-        <div>
+        <div class="title-section">
 
-          <div class="task-label">
-            TASK DETAILS
-          </div>
+          <span class="eyebrow">
+            Task Details
+          </span>
 
-          @if (!isEditing) {
-
-            <h1>
-              {{ task.title }}
-            </h1>
-
-          }
-
-        </div>
-
-
-        <div class="task-actions">
-
-          @if (task.captureId) {
-
-            <span class="ai-badge">
-              ✦ AI generated
-            </span>
-
-          }
-
-
-          @if (!isEditing) {
-
-            <button
-              type="button"
-              class="edit-button"
-              (click)="startEditing()"
-            >
-              Edit Task
-            </button>
-
-          }
+          <h1>
+            {{ task.title }}
+          </h1>
 
         </div>
 
       </div>
 
+      @if (!isEditing) {
 
-      <!-- ========================= -->
-      <!-- EDIT FORM -->
-      <!-- ========================= -->
+        <div class="header-actions">
 
-      @if (isEditing) {
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="startEditing()"
+          >
+            Edit Task
+          </button>
 
-        <form
-          class="edit-form"
-          [formGroup]="taskForm"
-          (ngSubmit)="saveTask()"
-        >
+          <button
+            type="button"
+            class="danger-button"
+            (click)="openDeleteConfirmation()"
+            [disabled]="isDeleting"
+          >
+            Delete Task
+          </button>
 
-          <!-- TITLE -->
+        </div>
 
-          <div class="form-field">
+      }
+
+    </header>
+
+    <!-- =========================
+         SUCCESS MESSAGE
+         ========================= -->
+
+    @if (saveSuccess) {
+
+      <div class="success-message">
+        <span>✓</span>
+        {{ saveSuccess }}
+      </div>
+
+    }
+
+    <!-- =========================
+         EDIT MODE
+         ========================= -->
+
+    @if (isEditing) {
+
+      <form
+        class="task-card edit-card"
+        [formGroup]="taskForm"
+        (ngSubmit)="saveTask()"
+      >
+
+        <div class="card-header">
+
+          <div>
+            <span class="eyebrow">
+              Task
+            </span>
+
+            <h2>
+              Edit Task
+            </h2>
+          </div>
+
+        </div>
+
+        <div class="form-content">
+
+          <!-- Title -->
+
+          <div class="form-group">
 
             <label for="title">
               Title
@@ -137,27 +147,33 @@
               id="title"
               type="text"
               formControlName="title"
-              placeholder="Task title"
-            >
+              placeholder="Enter task title"
+              autocomplete="off"
+            />
 
             @if (
-              taskForm.controls.title.invalid &&
-              taskForm.controls.title.touched
+              taskForm.controls.title.touched &&
+              taskForm.controls.title.hasError('required')
             ) {
-
               <span class="field-error">
-                Title is required and must be
-                200 characters or less.
+                Title is required.
               </span>
+            }
 
+            @if (
+              taskForm.controls.title.touched &&
+              taskForm.controls.title.hasError('maxlength')
+            ) {
+              <span class="field-error">
+                Title cannot exceed 200 characters.
+              </span>
             }
 
           </div>
 
+          <!-- Description -->
 
-          <!-- DESCRIPTION -->
-
-          <div class="form-field">
+          <div class="form-group">
 
             <label for="description">
               Description
@@ -165,31 +181,29 @@
 
             <textarea
               id="description"
-              rows="6"
+              rows="5"
               formControlName="description"
-              placeholder="Describe the task..."
+              placeholder="Describe what needs to be done..."
             ></textarea>
 
             @if (
-              taskForm.controls.description.invalid &&
-              taskForm.controls.description.touched
+              taskForm.controls.description.touched &&
+              taskForm.controls.description.hasError('maxlength')
             ) {
-
               <span class="field-error">
-                Description must be
-                5000 characters or less.
+                Description cannot exceed 5000 characters.
               </span>
-
             }
 
           </div>
 
-
-          <!-- PRIORITY / DATE / TIME -->
+          <!-- Row -->
 
           <div class="form-grid">
 
-            <div class="form-field">
+            <!-- Priority -->
+
+            <div class="form-group">
 
               <label for="priority">
                 Priority
@@ -216,8 +230,9 @@
 
             </div>
 
+            <!-- Due date -->
 
-            <div class="form-field">
+            <div class="form-group">
 
               <label for="dueDate">
                 Due Date
@@ -227,155 +242,120 @@
                 id="dueDate"
                 type="date"
                 formControlName="dueDate"
-              >
+              />
 
             </div>
 
+            <!-- Estimated time -->
 
-            <div class="form-field">
+            <div class="form-group">
 
               <label for="estimatedMinutes">
-                Estimated Minutes
+                Estimated Time
               </label>
 
-              <input
-                id="estimatedMinutes"
-                type="number"
-                min="1"
-                formControlName="estimatedMinutes"
-                placeholder="e.g. 60"
-              >
+              <div class="input-with-suffix">
+
+                <input
+                  id="estimatedMinutes"
+                  type="number"
+                  min="1"
+                  formControlName="estimatedMinutes"
+                  placeholder="30"
+                />
+
+                <span>
+                  min
+                </span>
+
+              </div>
 
               @if (
-                taskForm.controls.estimatedMinutes.invalid &&
-                taskForm.controls.estimatedMinutes.touched
+                taskForm.controls.estimatedMinutes.touched &&
+                taskForm.controls.estimatedMinutes.hasError('min')
               ) {
-
                 <span class="field-error">
-                  Estimated time must be
-                  at least 1 minute.
+                  Must be at least 1 minute.
+                </span>
+              }
+
+            </div>
+
+          </div>
+
+        </div>
+
+        @if (saveError) {
+
+          <div class="error-message">
+            {{ saveError }}
+          </div>
+
+        }
+
+        <!-- Form actions -->
+
+        <div class="form-actions">
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancelEditing()"
+            [disabled]="isSaving"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isSaving"
+          >
+
+            @if (isSaving) {
+              Saving...
+            } @else {
+              Save Changes
+            }
+
+          </button>
+
+        </div>
+
+      </form>
+
+    } @else {
+
+      <!-- =========================
+           READ ONLY MODE
+           ========================= -->
+
+      <div class="task-layout">
+
+        <!-- Main card -->
+
+        <article class="task-card main-card">
+
+          <div class="task-card-top">
+
+            <div class="badges">
+
+              <span
+                class="status-badge"
+                [class]="getStatusClass(task.status)"
+              >
+                {{ task.status.replace('_', ' ') }}
+              </span>
+
+              @if (task.captureId) {
+
+                <span class="source-badge">
+                  ✦ AI Generated
                 </span>
 
               }
 
             </div>
-
-          </div>
-
-
-          <!-- ERROR -->
-
-          @if (saveError) {
-
-            <div class="form-message form-error">
-              {{ saveError }}
-            </div>
-
-          }
-
-
-          <!-- SUCCESS -->
-
-          @if (saveSuccess) {
-
-            <div class="form-message form-success">
-              {{ saveSuccess }}
-            </div>
-
-          }
-
-
-          <!-- FORM ACTIONS -->
-
-          <div class="form-actions">
-
-            <button
-              type="button"
-              class="cancel-button"
-              [disabled]="isSaving"
-              (click)="cancelEditing()"
-            >
-              Cancel
-            </button>
-
-
-            <button
-              type="submit"
-              class="save-button"
-              [disabled]="isSaving"
-            >
-
-              @if (isSaving) {
-
-                <span class="button-spinner"></span>
-
-                Saving...
-
-              } @else {
-
-                Save Changes
-
-              }
-
-            </button>
-
-          </div>
-
-        </form>
-
-      }
-
-
-      <!-- ========================= -->
-      <!-- READ-ONLY VIEW -->
-      <!-- ========================= -->
-
-      @if (!isEditing) {
-
-        @if (task.description) {
-
-          <div class="description-section">
-
-            <span class="section-label">
-              DESCRIPTION
-            </span>
-
-            <p>
-              {{ task.description }}
-            </p>
-
-          </div>
-
-        }
-
-
-        <div class="details-grid">
-
-          <!-- STATUS -->
-
-          <div class="detail-item">
-
-            <span class="detail-label">
-              STATUS
-            </span>
-
-            <span
-              class="status-badge"
-              [class]="getStatusClass(task.status)"
-            >
-              {{ task.status.replace('_', ' ') }}
-            </span>
-
-          </div>
-
-
-          <!-- PRIORITY -->
-
-          <div class="detail-item">
-
-            <span class="detail-label">
-              PRIORITY
-            </span>
 
             <span
               class="priority-badge"
@@ -386,109 +366,217 @@
 
           </div>
 
+          <div class="task-content">
 
-          <!-- ESTIMATED TIME -->
+            <h2>
+              {{ task.title }}
+            </h2>
 
-          <div class="detail-item">
+            @if (task.description) {
 
-            <span class="detail-label">
-              ESTIMATED TIME
-            </span>
-
-            <strong>
-
-              @if (task.estimatedMinutes) {
-
-                {{ task.estimatedMinutes }}
-                minutes
-
-              } @else {
-
-                Not specified
-
-              }
-
-            </strong>
-
-          </div>
-
-
-          <!-- DUE DATE -->
-
-          <div class="detail-item">
-
-            <span class="detail-label">
-              DUE DATE
-            </span>
-
-            <strong>
-              {{ task.dueDate || 'No due date' }}
-            </strong>
-
-          </div>
-
-
-          <!-- CREATED -->
-
-          <div class="detail-item">
-
-            <span class="detail-label">
-              CREATED
-            </span>
-
-            <strong>
-              {{ task.createdAt | date:'medium' }}
-            </strong>
-
-          </div>
-
-
-          <!-- UPDATED -->
-
-          <div class="detail-item">
-
-            <span class="detail-label">
-              LAST UPDATED
-            </span>
-
-            <strong>
-              {{ task.updatedAt | date:'medium' }}
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        @if (task.captureId) {
-
-          <div class="source-section">
-
-            <div class="source-icon">
-              ✦
-            </div>
-
-            <div>
-
-              <strong>
-                Created from an AI capture
-              </strong>
-
-              <p>
-                This task was generated by MindMate
-                from one of your captures.
+              <p class="description">
+                {{ task.description }}
               </p>
 
+            } @else {
+
+              <p class="empty-description">
+                No description provided.
+              </p>
+
+            }
+
+          </div>
+
+        </article>
+
+        <!-- Metadata card -->
+
+        <aside class="task-card metadata-card">
+
+          <div class="card-header">
+
+            <div>
+              <span class="eyebrow">
+                Overview
+              </span>
+
+              <h2>
+                Task Information
+              </h2>
             </div>
 
           </div>
 
-        }
+          <div class="metadata-list">
+
+            <div class="metadata-item">
+
+              <span class="metadata-label">
+                Status
+              </span>
+
+              <span class="metadata-value">
+                {{ task.status.replace('_', ' ') }}
+              </span>
+
+            </div>
+
+            <div class="metadata-item">
+
+              <span class="metadata-label">
+                Priority
+              </span>
+
+              <span class="metadata-value">
+                {{ task.priority }}
+              </span>
+
+            </div>
+
+            <div class="metadata-item">
+
+              <span class="metadata-label">
+                Due Date
+              </span>
+
+              <span class="metadata-value">
+
+                @if (task.dueDate) {
+                  {{ task.dueDate | date:'dd MMM yyyy' }}
+                } @else {
+                  No due date
+                }
+
+              </span>
+
+            </div>
+
+            <div class="metadata-item">
+
+              <span class="metadata-label">
+                Estimated Time
+              </span>
+
+              <span class="metadata-value">
+
+                @if (task.estimatedMinutes) {
+                  {{ task.estimatedMinutes }} minutes
+                } @else {
+                  Not specified
+                }
+
+              </span>
+
+            </div>
+
+            <div class="metadata-item">
+
+              <span class="metadata-label">
+                Created
+              </span>
+
+              <span class="metadata-value">
+                {{ task.createdAt | date:'dd MMM yyyy, HH:mm' }}
+              </span>
+
+            </div>
+
+            <div class="metadata-item">
+
+              <span class="metadata-label">
+                Last Updated
+              </span>
+
+              <span class="metadata-value">
+                {{ task.updatedAt | date:'dd MMM yyyy, HH:mm' }}
+              </span>
+
+            </div>
+
+          </div>
+
+        </aside>
+
+      </div>
+
+    }
+
+  </section>
+}
+
+<!-- =========================
+     DELETE CONFIRMATION
+     ========================= -->
+
+@if (showDeleteConfirmation) {
+
+  <div
+    class="delete-overlay"
+    (click)="cancelDelete()"
+  >
+
+    <div
+      class="delete-dialog"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="delete-icon">
+        !
+      </div>
+
+      <span class="eyebrow">
+        Delete Task
+      </span>
+
+      <h2>
+        Delete this task?
+      </h2>
+
+      <p>
+        This will permanently remove
+        <strong>{{ task?.title }}</strong>.
+        This action cannot be undone.
+      </p>
+
+      @if (deleteError) {
+
+        <div class="error-message">
+          {{ deleteError }}
+        </div>
 
       }
 
-    </section>
+      <div class="delete-actions">
 
-  }
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="cancelDelete()"
+          [disabled]="isDeleting"
+        >
+          Cancel
+        </button>
 
-</div>
+        <button
+          type="button"
+          class="danger-button"
+          (click)="confirmDelete()"
+          [disabled]="isDeleting"
+        >
+
+          @if (isDeleting) {
+            Deleting...
+          } @else {
+            Delete Task
+          }
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+}

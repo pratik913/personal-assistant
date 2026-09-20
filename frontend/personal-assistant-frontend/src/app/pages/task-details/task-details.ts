@@ -15,6 +15,7 @@ import {
 
 import {
   ActivatedRoute,
+  Router,
   RouterLink
 } from '@angular/router';
 
@@ -38,6 +39,9 @@ export class TaskDetails {
   private readonly route =
     inject(ActivatedRoute);
 
+  private readonly router =
+    inject(Router);
+
   private readonly taskService =
     inject(TaskService);
 
@@ -49,10 +53,15 @@ export class TaskDetails {
   isLoading = true;
   isEditing = false;
   isSaving = false;
+  isDeleting = false;
 
   errorMessage = '';
+
   saveError = '';
   saveSuccess = '';
+
+  deleteError = '';
+  showDeleteConfirmation = false;
 
   taskForm = new FormGroup({
     title: new FormControl('', {
@@ -113,8 +122,6 @@ export class TaskDetails {
 
     this.taskService.getTask(taskId).subscribe({
       next: (task) => {
-        console.log('Task loaded:', task);
-
         this.task = task;
         this.isLoading = false;
 
@@ -168,6 +175,7 @@ export class TaskDetails {
     this.populateForm(this.task);
 
     this.isEditing = true;
+
     this.saveError = '';
     this.saveSuccess = '';
   }
@@ -181,6 +189,7 @@ export class TaskDetails {
 
     this.isEditing = false;
     this.isSaving = false;
+
     this.saveError = '';
     this.saveSuccess = '';
   }
@@ -214,6 +223,7 @@ export class TaskDetails {
     };
 
     this.isSaving = true;
+
     this.saveError = '';
     this.saveSuccess = '';
 
@@ -224,11 +234,6 @@ export class TaskDetails {
       )
       .subscribe({
         next: (updatedTask) => {
-          console.log(
-            'Task updated:',
-            updatedTask
-          );
-
           this.task = updatedTask;
 
           this.populateForm(updatedTask);
@@ -263,6 +268,66 @@ export class TaskDetails {
           } else {
             this.saveError =
               'Unable to update the task.';
+          }
+
+          this.changeDetectorRef.detectChanges();
+        }
+      });
+  }
+
+  openDeleteConfirmation(): void {
+    if (!this.task || this.isDeleting) {
+      return;
+    }
+
+    this.deleteError = '';
+    this.showDeleteConfirmation = true;
+  }
+
+  cancelDelete(): void {
+    if (this.isDeleting) {
+      return;
+    }
+
+    this.showDeleteConfirmation = false;
+    this.deleteError = '';
+  }
+
+  confirmDelete(): void {
+    if (!this.task || this.isDeleting) {
+      return;
+    }
+
+    this.isDeleting = true;
+    this.deleteError = '';
+
+    this.taskService
+      .deleteTask(this.task.id)
+      .subscribe({
+        next: () => {
+          this.isDeleting = false;
+          this.showDeleteConfirmation = false;
+
+          this.router.navigate(['/tasks']);
+        },
+
+        error: (error) => {
+          console.error(
+            'Failed to delete task:',
+            error
+          );
+
+          this.isDeleting = false;
+
+          if (error.status === 404) {
+            this.deleteError =
+              'Task not found or you do not have access to it.';
+          } else if (error.status === 401) {
+            this.deleteError =
+              'Your session has expired. Please log in again.';
+          } else {
+            this.deleteError =
+              'Unable to delete the task. Please try again.';
           }
 
           this.changeDetectorRef.detectChanges();

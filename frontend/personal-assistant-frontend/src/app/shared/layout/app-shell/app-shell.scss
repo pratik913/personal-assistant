@@ -8,16 +8,28 @@
 
 .main-content {
   min-height: 100vh;
-
   margin-left: 240px;
+  padding: 0;
 
   background: var(--bg-secondary);
 
-  transition: background var(--transition);
+  transition:
+    margin-left var(--transition),
+    background var(--transition);
 }
 
-@media (max-width: 800px) {
+/* Tablet */
+
+@media (max-width: 1000px) {
   .main-content {
-    margin-left: 72px;
+    margin-left: 200px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+  .main-content {
+    margin-left: 64px;
   }
 }
