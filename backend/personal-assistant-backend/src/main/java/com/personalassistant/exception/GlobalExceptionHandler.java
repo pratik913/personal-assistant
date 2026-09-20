@@ -105,4 +105,35 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(response);
     }
+    @ExceptionHandler(ScheduleEntryNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleScheduleEntryNotFound(
+            ScheduleEntryNotFoundException exception
+    ) {
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                exception.getMessage(),
+                Instant.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(InvalidScheduleTimeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidScheduleTime(
+            InvalidScheduleTimeException exception
+    ) {
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                exception.getMessage(),
+                Instant.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
 }
