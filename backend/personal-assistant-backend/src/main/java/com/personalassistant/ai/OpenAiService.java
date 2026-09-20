@@ -6,6 +6,7 @@ import com.openai.models.ChatModel;
 import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.StructuredResponseCreateParams;
 import com.personalassistant.dto.AiCaptureAnalysis;
+import com.personalassistant.dto.AiPlanData;
 import com.personalassistant.exception.AiErrorType;
 import com.personalassistant.exception.AiProcessingException;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,34 @@ public class OpenAiService implements AiService {
         Return only the requested structured output.
         """;
 
+    private static final String PLANNER_SYSTEM_INSTRUCTION = """
+    You are an AI productivity planner.
+
+    Your job is to create a realistic daily plan from the user's
+    available tasks and available time.
+
+    Rules:
+    - Only schedule tasks provided in the planning context.
+    - Never invent tasks.
+    - Prefer HIGH priority tasks when there is limited available time.
+    - Consider estimated task duration.
+    - Do not schedule a task outside the user's available time.
+    - Do not overlap planned tasks.
+    - Respect existing scheduled tasks.
+    - Keep reasonable gaps between tasks when appropriate.
+    - Do not schedule more time than the task's estimated duration.
+    - If there is not enough time for all tasks, prioritize the most
+      important tasks and leave lower-priority tasks unscheduled.
+    - Return task IDs exactly as provided.
+    - Every planned item must have a clear reason.
+    - The planning date and available times are expressed in the
+      user's timezone.
+    - Convert planned local times to ISO-8601 timestamps using UTC
+      offsets when returning startAt and endAt.
+    - Do not interpret the provided local times as UTC.
+    - Return only the requested structured output.
+    """;
+
     private final OpenAIClient client;
 
     public OpenAiService() {
@@ -91,6 +120,53 @@ public class OpenAiService implements AiService {
                             new AiProcessingException(
                                     AiErrorType.INVALID_RESPONSE,
                                     "AI returned an invalid response."
+                            )
+                    );
+
+        } catch (AiProcessingException exception) {
+
+            throw exception;
+
+        } catch (RuntimeException exception) {
+
+            throw classifyException(exception);
+        }
+    }
+
+    @Override
+    public AiPlanData generatePlan(
+            String planningContext
+    ) {
+
+        try {
+
+            StructuredResponseCreateParams<AiPlanData> params =
+                    ResponseCreateParams.builder()
+                            .input("""
+                                %s
+
+                                Planning context:
+                                %s
+                                """.formatted(
+                                    PLANNER_SYSTEM_INSTRUCTION,
+                                    planningContext
+                            ))
+                            .model(ChatModel.GPT_5)
+                            .text(AiPlanData.class)
+                            .build();
+
+            return client.responses()
+                    .create(params)
+                    .output()
+                    .stream()
+                    .flatMap(item -> item.message().stream())
+                    .flatMap(message -> message.content().stream())
+                    .flatMap(contentItem -> contentItem.outputText().stream())
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new AiProcessingException(
+                                    AiErrorType.INVALID_RESPONSE,
+                                    "AI returned an invalid planning response."
                             )
                     );
 

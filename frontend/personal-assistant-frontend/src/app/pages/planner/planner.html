@@ -1,1 +1,240 @@
-<p>planner works!</p>
+<div class="planner-page">
+
+  <header class="page-header">
+
+    <div>
+      <p class="eyebrow">AI PRODUCTIVITY</p>
+
+      <h1>AI Planner</h1>
+
+      <p class="page-description">
+        Tell MindMate when you're available and let AI
+        organize your tasks into a realistic plan.
+      </p>
+    </div>
+
+  </header>
+
+
+  <section class="planner-controls">
+
+    <div class="control-group">
+
+      <label for="planningDate">
+        Planning date
+      </label>
+
+      <input
+        id="planningDate"
+        type="date"
+        [(ngModel)]="planningDate"
+      />
+
+    </div>
+
+
+    <div class="control-group">
+
+      <label for="availableFrom">
+        Available from
+      </label>
+
+      <input
+        id="availableFrom"
+        type="time"
+        [(ngModel)]="availableFrom"
+      />
+
+    </div>
+
+
+    <div class="control-group">
+
+      <label for="availableUntil">
+        Available until
+      </label>
+
+      <input
+        id="availableUntil"
+        type="time"
+        [(ngModel)]="availableUntil"
+      />
+
+    </div>
+
+
+    <button
+      class="generate-button"
+      type="button"
+      [disabled]="isGenerating"
+      (click)="generatePlan()"
+    >
+
+      @if (isGenerating) {
+        <span class="spinner"></span>
+        <span>Generating...</span>
+      } @else {
+        <span>✦</span>
+        <span>Generate AI Plan</span>
+      }
+
+    </button>
+
+  </section>
+
+
+  @if (errorMessage) {
+
+    <div class="error-message">
+      {{ errorMessage }}
+    </div>
+
+  }
+
+
+  @if (!plan && !isGenerating && !errorMessage) {
+
+    <section class="empty-state">
+
+      <div class="empty-icon">
+        ✦
+      </div>
+
+      <h2>Plan your day with AI</h2>
+
+      <p>
+        Choose your available time and let MindMate
+        decide which tasks deserve your attention first.
+      </p>
+
+      <button
+        type="button"
+        class="empty-action"
+        (click)="generatePlan()"
+      >
+        Generate today's plan
+      </button>
+
+    </section>
+
+  }
+
+
+  @if (isGenerating) {
+
+    <section class="loading-state">
+
+      <div class="loading-icon">
+        ✦
+      </div>
+
+      <h2>Building your plan...</h2>
+
+      <p>
+        AI is analyzing your tasks, priorities and schedule.
+      </p>
+
+    </section>
+
+  }
+
+
+  @if (plan) {
+
+    <section class="plan-section">
+
+      <div class="plan-header">
+
+        <div>
+
+          <p class="eyebrow">
+            YOUR AI PLAN
+          </p>
+
+          <h2>
+            {{ plan.summary }}
+          </h2>
+
+        </div>
+
+        <div class="plan-date">
+          {{ plan.plan.planningDate }}
+        </div>
+
+      </div>
+
+
+      <div class="timeline">
+
+        @for (
+          item of plan.plan.items;
+          track item.taskId
+        ) {
+
+          <article class="timeline-item">
+
+            <div class="time-column">
+
+              <strong>
+                {{ formatTime(item.startAt) }}
+              </strong>
+
+              <span>
+                {{ formatTime(item.endAt) }}
+              </span>
+
+            </div>
+
+
+            <div class="timeline-line">
+
+              <div class="timeline-dot"></div>
+
+            </div>
+
+
+            <div class="task-card">
+
+              <div class="task-card-header">
+
+                <div>
+
+                  <h3>
+                    {{ item.taskTitle }}
+                  </h3>
+
+                  <span class="duration">
+                    {{ getDuration(item) }}
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <p class="reason">
+                {{ item.reason }}
+              </p>
+
+            </div>
+
+          </article>
+
+        }
+
+
+        @if (plan.plan.items.length === 0) {
+
+          <div class="no-tasks">
+            No tasks could be scheduled for this time window.
+          </div>
+
+        }
+
+      </div>
+
+    </section>
+
+  }
+
+</div>
