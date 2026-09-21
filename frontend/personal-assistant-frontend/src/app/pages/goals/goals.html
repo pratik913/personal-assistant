@@ -1,1 +1,631 @@
-<p>goals works!</p>
+<div class="goals-page">
+
+  <!-- ========================= -->
+  <!-- HEADER -->
+  <!-- ========================= -->
+
+  <div class="goals-header">
+
+    <div>
+
+      <h1 class="goals-title">
+        Goals
+      </h1>
+
+      <p class="goals-subtitle">
+        Turn your tasks into meaningful progress.
+      </p>
+
+    </div>
+
+    <button
+      class="create-goal-button"
+      type="button"
+      (click)="openCreateForm()"
+    >
+      <span>+</span>
+      New Goal
+    </button>
+
+  </div>
+
+
+  <!-- ========================= -->
+  <!-- CREATE GOAL / TASK MODAL -->
+  <!-- ========================= -->
+
+  @if (showCreateForm) {
+
+    <div class="form-overlay">
+
+      <div class="create-goal-modal">
+
+        <!-- ========================= -->
+        <!-- GOAL STEP -->
+        <!-- ========================= -->
+
+        @if (!showTaskStep) {
+
+          <div class="modal-header">
+
+            <div>
+
+              <h2>
+                Create New Goal
+              </h2>
+
+              <p>
+                Define something you want to accomplish.
+              </p>
+
+            </div>
+
+            <button
+              class="close-button"
+              type="button"
+              (click)="closeCreateForm()"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <form
+            #goalForm="ngForm"
+            (ngSubmit)="createGoal()"
+          >
+
+            <!-- TITLE -->
+
+            <div class="form-group">
+
+              <label for="goal-title">
+                Goal title
+              </label>
+
+              <input
+                id="goal-title"
+                name="title"
+                type="text"
+                [(ngModel)]="newGoal.title"
+                placeholder="e.g. Master System Design"
+                maxlength="200"
+                required
+              />
+
+            </div>
+
+
+            <!-- DESCRIPTION -->
+
+            <div class="form-group">
+
+              <label for="goal-description">
+                Description
+              </label>
+
+              <textarea
+                id="goal-description"
+                name="description"
+                [(ngModel)]="newGoal.description"
+                placeholder="What do you want to achieve?"
+                maxlength="5000"
+                rows="4"
+              ></textarea>
+
+            </div>
+
+
+            <!-- TARGET DATE -->
+
+            <div class="form-group">
+
+              <label for="goal-date">
+                Target date
+              </label>
+
+              <input
+                id="goal-date"
+                name="targetDate"
+                type="date"
+                [(ngModel)]="newGoal.targetDate"
+                [min]="minTargetDate"
+              />
+
+              <small class="form-hint">
+                Target date cannot be in the past.
+              </small>
+
+            </div>
+
+
+            @if (createError) {
+
+              <div class="form-error">
+                {{ createError }}
+              </div>
+
+            }
+
+
+            <div class="modal-actions">
+
+              <button
+                class="cancel-button"
+                type="button"
+                (click)="closeCreateForm()"
+                [disabled]="creatingGoal"
+              >
+                Cancel
+              </button>
+
+              <button
+                class="submit-button"
+                type="submit"
+                [disabled]="
+                  creatingGoal ||
+                  goalForm.invalid
+                "
+              >
+
+                @if (creatingGoal) {
+
+                  Creating...
+
+                } @else {
+
+                  Create Goal
+
+                }
+
+              </button>
+
+            </div>
+
+          </form>
+
+        }
+
+
+        <!-- ========================= -->
+        <!-- TASK STEP -->
+        <!-- ========================= -->
+
+        @else {
+
+          <div class="modal-header">
+
+            <div>
+
+              <h2>
+                Add Tasks
+              </h2>
+
+              <p>
+                Add tasks to
+                <strong>
+                  {{ createdGoal?.title }}
+                </strong>
+              </p>
+
+            </div>
+
+            <button
+              class="close-button"
+              type="button"
+              (click)="skipTasks()"
+              [disabled]="savingTasks"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <div class="task-step-intro">
+
+            <div class="task-step-icon">
+              ✓
+            </div>
+
+            <div>
+
+              <strong>
+                Goal created successfully
+              </strong>
+
+              <p>
+                Add the tasks you need to complete this goal.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <!-- TASKS -->
+
+          <div class="new-task-list">
+
+            @for (
+              task of newTasks;
+              track $index;
+              let i = $index
+            ) {
+
+              <div class="new-task-card">
+
+                <div class="task-card-header">
+
+                  <span>
+                    Task {{ i + 1 }}
+                  </span>
+
+                  @if (newTasks.length > 1) {
+
+                    <button
+                      type="button"
+                      class="remove-task-button"
+                      (click)="removeTaskRow(i)"
+                      [disabled]="savingTasks"
+                    >
+                      Remove
+                    </button>
+
+                  }
+
+                </div>
+
+
+                <!-- TASK TITLE -->
+
+                <div class="form-group">
+
+                  <label>
+                    Task title
+                  </label>
+
+                  <input
+                    type="text"
+                    [(ngModel)]="task.title"
+                    [name]="'task-title-' + i"
+                    placeholder="e.g. Learn CAP theorem"
+                    maxlength="200"
+                  />
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="form-group">
+
+                  <label>
+                    Description
+                  </label>
+
+                  <textarea
+                    [(ngModel)]="task.description"
+                    [name]="'task-description-' + i"
+                    placeholder="What needs to be done?"
+                    rows="2"
+                    maxlength="5000"
+                  ></textarea>
+
+                </div>
+
+
+                <div class="task-options">
+
+                  <!-- PRIORITY -->
+
+                  <div class="form-group">
+
+                    <label>
+                      Priority
+                    </label>
+
+                    <select
+                      [(ngModel)]="task.priority"
+                      [name]="'task-priority-' + i"
+                    >
+
+                      <option value="LOW">
+                        Low
+                      </option>
+
+                      <option value="MEDIUM">
+                        Medium
+                      </option>
+
+                      <option value="HIGH">
+                        High
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  <!-- ESTIMATED TIME -->
+
+                  <div class="form-group">
+
+                    <label>
+                      Estimated minutes
+                    </label>
+
+                    <input
+                      type="number"
+                      [(ngModel)]="task.estimatedMinutes"
+                      [name]="'task-time-' + i"
+                      min="1"
+                      placeholder="60"
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            }
+
+          </div>
+
+
+          <!-- ADD ANOTHER -->
+
+          <button
+            type="button"
+            class="add-task-button"
+            (click)="addTaskRow()"
+            [disabled]="savingTasks"
+          >
+            + Add another task
+          </button>
+
+
+          @if (taskError) {
+
+            <div class="form-error">
+              {{ taskError }}
+            </div>
+
+          }
+
+
+          <!-- ACTIONS -->
+
+          <div class="modal-actions">
+
+            <button
+              class="cancel-button"
+              type="button"
+              (click)="skipTasks()"
+              [disabled]="savingTasks"
+            >
+              Skip for now
+            </button>
+
+            <button
+              class="submit-button"
+              type="button"
+              (click)="saveTasks()"
+              [disabled]="savingTasks"
+            >
+
+              @if (savingTasks) {
+
+                Saving...
+
+              } @else {
+
+                Save Tasks
+
+              }
+
+            </button>
+
+          </div>
+
+        }
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- LOADING -->
+  <!-- ========================= -->
+
+  @if (loading) {
+
+    <div class="loading-state">
+      Loading your goals...
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- ERROR -->
+  <!-- ========================= -->
+
+  @else if (errorMessage) {
+
+    <div class="error-state">
+
+      <p>
+        {{ errorMessage }}
+      </p>
+
+      <button
+        class="retry-button"
+        type="button"
+        (click)="retry()"
+      >
+        Try Again
+      </button>
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- EMPTY STATE -->
+  <!-- ========================= -->
+
+  @else if (goals.length === 0) {
+
+    <div class="empty-state">
+
+      <div class="empty-icon">
+        🎯
+      </div>
+
+      <h3>
+        No goals yet
+      </h3>
+
+      <p>
+        Create your first goal and start tracking your progress.
+      </p>
+
+      <button
+        class="create-goal-button empty-create-button"
+        type="button"
+        (click)="openCreateForm()"
+      >
+        <span>+</span>
+        Create Your First Goal
+      </button>
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- GOALS -->
+  <!-- ========================= -->
+
+  @else {
+
+    <div class="goal-grid">
+
+      @for (
+        goal of goals;
+        track goal.id
+      ) {
+
+        <article class="goal-card"  (click)="openGoal(goal.id)" >
+
+          <div class="goal-card-header">
+
+            <div class="goal-icon">
+              🎯
+            </div>
+
+            <div class="goal-info">
+
+              <h2 class="goal-title">
+                {{ goal.title }}
+              </h2>
+
+              @if (goal.description) {
+
+                <p class="goal-description">
+                  {{ goal.description }}
+                </p>
+
+              }
+
+            </div>
+
+          </div>
+
+
+          <!-- PROGRESS -->
+
+          <div class="goal-progress-section">
+
+            <div class="progress-header">
+
+              <span>
+                Progress
+              </span>
+
+              <span class="progress-value">
+
+                {{
+                  getProgress(goal.id).progressPercentage
+                }}%
+
+              </span>
+
+            </div>
+
+
+            <div class="progress-bar">
+
+              <div
+                class="progress-fill"
+                [style.width.%]="
+                  getProgress(goal.id).progressPercentage
+                "
+              ></div>
+
+            </div>
+
+          </div>
+
+
+          <!-- FOOTER -->
+
+          <div class="goal-footer">
+
+            <span class="goal-tasks">
+
+              {{
+                getProgress(goal.id).completedTasks
+              }}
+
+              /
+
+              {{
+                getProgress(goal.id).totalTasks
+              }}
+
+              tasks completed
+
+            </span>
+
+
+            @if (goal.targetDate) {
+
+              <span class="goal-date">
+
+                Target:
+                {{ goal.targetDate | date:'mediumDate' }}
+
+              </span>
+
+            }
+
+          </div>
+
+        </article>
+
+      }
+
+    </div>
+
+  }
+
+</div>

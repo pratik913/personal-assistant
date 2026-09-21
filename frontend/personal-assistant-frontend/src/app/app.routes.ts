@@ -15,6 +15,7 @@ import { Schedule } from './pages/schedule/schedule';
 import { Planner } from './pages/planner/planner';
 import { Goals } from './pages/goals/goals';
 import { Settings } from './pages/settings/settings';
+import { GoalDetails } from './pages/goal-details/goal-details';
 
 export const routes: Routes = [
 
@@ -73,7 +74,11 @@ export const routes: Routes = [
       {
         path: 'settings',
         component: Settings
-      }
+      },
+      {
+  path: 'goals/:id',
+  component: GoalDetails
+}
     ]
   },
 

@@ -7,8 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -27,4 +27,6 @@ public class UpdateTaskRequest {
 
     @Min(1)
     private Integer estimatedMinutes;
+
+    private UUID goalId;
 }

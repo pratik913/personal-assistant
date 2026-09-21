@@ -1,0 +1,908 @@
+<div class="goal-details-page">
+
+  @if (loading) {
+
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading goal...</p>
+    </div>
+
+  }
+
+  @if (!loading && errorMessage) {
+
+    <div class="error-state">
+      <p>{{ errorMessage }}</p>
+
+      <button
+        type="button"
+        class="secondary-action-button"
+        (click)="goBack()"
+      >
+        Back to Goals
+      </button>
+    </div>
+
+  }
+
+  @if (!loading && goal) {
+
+    <!-- ===================================================== -->
+    <!-- HEADER -->
+    <!-- ===================================================== -->
+
+    <div class="page-header">
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        <span class="back-icon">←</span>
+        Back to Goals
+      </button>
+
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- GOAL HERO -->
+    <!-- ===================================================== -->
+
+    <section class="goal-hero">
+
+      <div class="goal-hero-content">
+
+        <div class="goal-title-section">
+
+          <span class="goal-label">
+            GOAL
+          </span>
+
+          <h1>
+            {{ goal.title }}
+          </h1>
+
+          @if (goal.description) {
+
+            <p class="goal-description">
+              {{ goal.description }}
+            </p>
+
+          }
+
+          @if (goal.targetDate) {
+
+            <div class="goal-target-date">
+
+              <span class="calendar-icon">
+                📅
+              </span>
+
+              Target:
+              {{ goal.targetDate | date:'dd MMM yyyy' }}
+
+            </div>
+
+          }
+
+        </div>
+
+        <div class="goal-actions">
+
+          <button
+            type="button"
+            class="edit-goal-button"
+            (click)="openEditGoalModal()"
+          >
+            ✎ Edit Goal
+          </button>
+
+          <button
+            type="button"
+            class="delete-goal-button"
+            (click)="openDeleteGoalModal()"
+          >
+            🗑 Delete
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- PROGRESS -->
+    <!-- ===================================================== -->
+
+    <section class="progress-card">
+
+      <div class="progress-header">
+
+        <div>
+
+          <span class="section-label">
+            PROGRESS
+          </span>
+
+          <h2>
+            {{ progress.completedTasks }}
+            of
+            {{ progress.totalTasks }}
+            tasks completed
+          </h2>
+
+        </div>
+
+        <div class="progress-percentage">
+          {{ progress.progressPercentage | number:'1.0-0' }}%
+        </div>
+
+      </div>
+
+      <div class="progress-track">
+
+        <div
+          class="progress-fill"
+          [style.width.%]="progress.progressPercentage"
+        ></div>
+
+      </div>
+
+      <div class="progress-footer">
+
+        <span>
+          {{ progress.remainingTasks }} remaining
+        </span>
+
+        @if (progress.totalTasks > 0) {
+
+          <span>
+            Keep going 🚀
+          </span>
+
+        }
+
+      </div>
+
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- TASKS -->
+    <!-- ===================================================== -->
+
+    <section class="tasks-section">
+
+      <div class="tasks-header">
+
+        <div>
+
+          <span class="section-label">
+            TASKS
+          </span>
+
+          <h2>
+            Goal Tasks
+          </h2>
+
+        </div>
+
+        <div class="task-actions">
+
+          <button
+            type="button"
+            class="secondary-action-button"
+            (click)="openExistingTasksModal()"
+          >
+            Add Existing
+          </button>
+
+          <button
+            type="button"
+            class="add-task-button"
+            (click)="openAddTaskModal()"
+          >
+            + Add Task
+          </button>
+
+        </div>
+
+      </div>
+
+      @if (tasks.length === 0) {
+
+        <div class="empty-state">
+
+          <div class="empty-icon">
+            ✓
+          </div>
+
+          <h3>
+            No tasks yet
+          </h3>
+
+          <p>
+            Add tasks to start making progress toward this goal.
+          </p>
+
+          <div class="empty-actions">
+
+            <button
+              type="button"
+              class="secondary-action-button"
+              (click)="openExistingTasksModal()"
+            >
+              Add Existing Task
+            </button>
+
+            <button
+              type="button"
+              class="add-task-button"
+              (click)="openAddTaskModal()"
+            >
+              + Add First Task
+            </button>
+
+          </div>
+
+        </div>
+
+      }
+
+      @if (tasks.length > 0) {
+
+        <div class="task-list">
+
+          @for (task of tasks; track task.id) {
+
+            <article
+              class="task-card"
+              [class.completed]="task.status === 'COMPLETED'"
+            >
+
+              <button
+                type="button"
+                class="task-checkbox"
+                [class.checked]="task.status === 'COMPLETED'"
+                [disabled]="updatingTaskId === task.id"
+                (click)="toggleTaskStatus(task); $event.stopPropagation()"
+                [attr.aria-label]="
+                  task.status === 'COMPLETED'
+                    ? 'Mark task as incomplete'
+                    : 'Mark task as completed'
+                "
+              >
+
+                @if (task.status === 'COMPLETED') {
+                  ✓
+                }
+
+              </button>
+
+              <div
+                class="task-content"
+                (click)="openTask(task.id)"
+              >
+
+                <div class="task-main">
+
+                  <h3>
+                    {{ task.title }}
+                  </h3>
+
+                  @if (task.description) {
+
+                    <p>
+                      {{ task.description }}
+                    </p>
+
+                  }
+
+                </div>
+
+                <div class="task-meta">
+
+                  <span
+                    class="priority-badge"
+                    [class]="getPriorityClass(task.priority)"
+                  >
+                    {{ task.priority }}
+                  </span>
+
+                  <span
+                    class="status-badge"
+                    [class.completed-status]="
+                      task.status === 'COMPLETED'
+                    "
+                  >
+                    {{ getStatusLabel(task.status) }}
+                  </span>
+
+                  @if (task.estimatedMinutes) {
+
+                    <span class="task-time">
+                      ⏱ {{ task.estimatedMinutes }} min
+                    </span>
+
+                  }
+
+                  @if (task.dueDate) {
+
+                    <span class="task-due-date">
+                      📅 {{ task.dueDate | date:'dd MMM' }}
+                    </span>
+
+                  }
+
+                </div>
+
+              </div>
+
+              <div class="task-card-actions">
+
+                <button
+                  type="button"
+                  class="unassign-task-button"
+                  [disabled]="unassigningTaskId === task.id"
+                  (click)="
+                    $event.stopPropagation();
+                    unassignTaskFromGoal(task)
+                  "
+                >
+
+                  @if (unassigningTaskId === task.id) {
+                    Removing...
+                  } @else {
+                    Unassign
+                  }
+
+                </button>
+
+                <button
+                  type="button"
+                  class="task-arrow"
+                  (click)="openTask(task.id)"
+                  aria-label="Open task"
+                >
+                  →
+                </button>
+
+              </div>
+
+            </article>
+
+          }
+
+        </div>
+
+      }
+
+    </section>
+
+  }
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- EDIT GOAL MODAL -->
+<!-- ========================================================= -->
+
+@if (showEditGoalModal) {
+
+  <div
+    class="modal-backdrop"
+    (click)="closeEditGoalModal()"
+  >
+
+    <div
+      class="modal-card"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="modal-header">
+
+        <div>
+
+          <span class="section-label">
+            GOAL SETTINGS
+          </span>
+
+          <h2>
+            Edit Goal
+          </h2>
+
+        </div>
+
+        <button
+          type="button"
+          class="modal-close-button"
+          [disabled]="savingGoal"
+          (click)="closeEditGoalModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+      @if (goalErrorMessage) {
+
+        <div class="modal-error">
+          {{ goalErrorMessage }}
+        </div>
+
+      }
+
+      <div class="form-group">
+
+        <label for="edit-goal-title">
+          Goal title
+        </label>
+
+        <input
+          id="edit-goal-title"
+          type="text"
+          [(ngModel)]="editGoal.title"
+          placeholder="e.g. Master System Design"
+          maxlength="200"
+        />
+
+      </div>
+
+      <div class="form-group">
+
+        <label for="edit-goal-description">
+          Description
+        </label>
+
+        <textarea
+          id="edit-goal-description"
+          [(ngModel)]="editGoal.description"
+          placeholder="Describe what you want to achieve..."
+          rows="4"
+          maxlength="5000"
+        ></textarea>
+
+      </div>
+
+      <div class="form-group">
+
+        <label for="edit-goal-target-date">
+          Target date
+        </label>
+
+        <input
+          id="edit-goal-target-date"
+          type="date"
+          [(ngModel)]="editGoal.targetDate"
+        />
+
+      </div>
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="secondary-action-button"
+          [disabled]="savingGoal"
+          (click)="closeEditGoalModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="add-task-button"
+          [disabled]="savingGoal"
+          (click)="saveGoalChanges()"
+        >
+
+          @if (savingGoal) {
+            Saving...
+          } @else {
+            Save Changes
+          }
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+}
+
+
+<!-- ========================================================= -->
+<!-- DELETE GOAL MODAL -->
+<!-- ========================================================= -->
+
+@if (showDeleteGoalModal) {
+
+  <div
+    class="modal-backdrop"
+    (click)="closeDeleteGoalModal()"
+  >
+
+    <div
+      class="modal-card delete-goal-modal"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="delete-goal-icon">
+        !
+      </div>
+
+      <div class="delete-goal-content">
+
+        <h2>
+          Delete this goal?
+        </h2>
+
+        <p>
+          Are you sure you want to delete
+          <strong>{{ goal?.title }}</strong>?
+        </p>
+
+        <p class="delete-goal-warning">
+          The goal will be deleted, but its tasks will remain
+          in MindMate as unassigned tasks.
+        </p>
+
+      </div>
+
+      @if (deleteGoalErrorMessage) {
+
+        <div class="modal-error">
+          {{ deleteGoalErrorMessage }}
+        </div>
+
+      }
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="secondary-action-button"
+          [disabled]="deletingGoal"
+          (click)="closeDeleteGoalModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="delete-confirm-button"
+          [disabled]="deletingGoal"
+          (click)="confirmDeleteGoal()"
+        >
+
+          @if (deletingGoal) {
+            Deleting...
+          } @else {
+            Delete Goal
+          }
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+}
+
+
+<!-- ========================================================= -->
+<!-- ADD NEW TASK MODAL -->
+<!-- ========================================================= -->
+
+@if (showAddTaskModal) {
+
+  <div
+    class="modal-backdrop"
+    (click)="closeAddTaskModal()"
+  >
+
+    <div
+      class="modal-card"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="modal-header">
+
+        <div>
+
+          <span class="section-label">
+            NEW TASK
+          </span>
+
+          <h2>
+            Add Task
+          </h2>
+
+        </div>
+
+        <button
+          type="button"
+          class="modal-close-button"
+          [disabled]="savingTask"
+          (click)="closeAddTaskModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+      @if (taskErrorMessage) {
+
+        <div class="modal-error">
+          {{ taskErrorMessage }}
+        </div>
+
+      }
+
+      <div class="form-group">
+
+        <label for="task-title">
+          Task title
+        </label>
+
+        <input
+          id="task-title"
+          type="text"
+          [(ngModel)]="newTask.title"
+          placeholder="e.g. Learn database sharding"
+          maxlength="200"
+        />
+
+      </div>
+
+      <div class="form-group">
+
+        <label for="task-description">
+          Description
+        </label>
+
+        <textarea
+          id="task-description"
+          [(ngModel)]="newTask.description"
+          placeholder="Add some details..."
+          rows="4"
+        ></textarea>
+
+      </div>
+
+      <div class="form-row">
+
+        <div class="form-group">
+
+          <label for="task-priority">
+            Priority
+          </label>
+
+          <select
+            id="task-priority"
+            [(ngModel)]="newTask.priority"
+          >
+
+            <option value="LOW">
+              Low
+            </option>
+
+            <option value="MEDIUM">
+              Medium
+            </option>
+
+            <option value="HIGH">
+              High
+            </option>
+
+          </select>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="estimated-minutes">
+            Estimated minutes
+          </label>
+
+          <input
+            id="estimated-minutes"
+            type="number"
+            min="1"
+            [(ngModel)]="newTask.estimatedMinutes"
+            placeholder="30"
+          />
+
+        </div>
+
+      </div>
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="secondary-action-button"
+          [disabled]="savingTask"
+          (click)="closeAddTaskModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="add-task-button"
+          [disabled]="savingTask"
+          (click)="saveNewTask()"
+        >
+
+          @if (savingTask) {
+            Creating...
+          } @else {
+            Create Task
+          }
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+}
+
+
+<!-- ========================================================= -->
+<!-- ADD EXISTING TASK MODAL -->
+<!-- ========================================================= -->
+
+@if (showExistingTasksModal) {
+
+  <div
+    class="modal-backdrop"
+    (click)="closeExistingTasksModal()"
+  >
+
+    <div
+      class="modal-card existing-task-modal"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="modal-header">
+
+        <div>
+
+          <span class="section-label">
+            EXISTING TASKS
+          </span>
+
+          <h2>
+            Add Existing Task
+          </h2>
+
+        </div>
+
+        <button
+          type="button"
+          class="modal-close-button"
+          [disabled]="!!addingExistingTaskId"
+          (click)="closeExistingTasksModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+      @if (existingTaskErrorMessage) {
+
+        <div class="modal-error">
+          {{ existingTaskErrorMessage }}
+        </div>
+
+      }
+
+      @if (loadingExistingTasks) {
+
+        <div class="modal-loading">
+
+          <div class="loading-spinner"></div>
+
+          <p>
+            Loading tasks...
+          </p>
+
+        </div>
+
+      } @else if (unassignedTasks.length === 0) {
+
+        <div class="modal-empty-state">
+
+          <div class="empty-icon">
+            ✓
+          </div>
+
+          <h3>
+            No unassigned tasks
+          </h3>
+
+          <p>
+            All your tasks are already assigned to a goal.
+          </p>
+
+        </div>
+
+      } @else {
+
+        <div class="existing-task-list">
+
+          @for (
+            task of unassignedTasks;
+            track task.id
+          ) {
+
+            <div class="existing-task-item">
+
+              <div class="existing-task-content">
+
+                <h3>
+                  {{ task.title }}
+                </h3>
+
+                @if (task.description) {
+
+                  <p>
+                    {{ task.description }}
+                  </p>
+
+                }
+
+                <div class="existing-task-meta">
+
+                  <span
+                    class="priority-badge"
+                    [class]="getPriorityClass(task.priority)"
+                  >
+                    {{ task.priority }}
+                  </span>
+
+                  <span>
+                    {{ getStatusLabel(task.status) }}
+                  </span>
+
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                class="assign-task-button"
+                [disabled]="addingExistingTaskId === task.id"
+                (click)="addExistingTaskToGoal(task)"
+              >
+
+                @if (addingExistingTaskId === task.id) {
+                  Adding...
+                } @else {
+                  Add
+                }
+
+              </button>
+
+            </div>
+
+          }
+
+        </div>
+
+      }
+
+    </div>
+
+  </div>
+
+}

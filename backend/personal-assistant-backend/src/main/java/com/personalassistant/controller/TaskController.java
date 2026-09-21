@@ -61,6 +61,7 @@ public class TaskController {
             @PathVariable UUID taskId,
             Authentication authentication
     ) {
+
         UUID userId = UUID.fromString(authentication.getName());
 
         taskService.deleteTask(taskId, userId);
@@ -72,12 +73,28 @@ public class TaskController {
             @Valid @RequestBody UpdateTaskRequest request,
             Authentication authentication
     ) {
+
         UUID userId = UUID.fromString(authentication.getName());
 
         return taskService.updateTask(
                 taskId,
                 userId,
                 request
+        );
+    }
+
+    @DeleteMapping("/{taskId}/goal")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeTaskFromGoal(
+            @PathVariable UUID taskId,
+            Authentication authentication
+    ) {
+
+        UUID userId = UUID.fromString(authentication.getName());
+
+        taskService.removeTaskFromGoal(
+                taskId,
+                userId
         );
     }
 

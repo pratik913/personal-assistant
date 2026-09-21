@@ -32,4 +32,6 @@ public class TaskResponse {
     private Instant updatedAt;
 
     private UUID captureId;
+
+    private UUID goalId;
 }

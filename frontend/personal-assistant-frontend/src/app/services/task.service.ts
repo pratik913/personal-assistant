@@ -23,6 +23,18 @@ export interface TaskResponse {
   createdAt: string;
   updatedAt: string;
   captureId: string | null;
+  goalId: string | null;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  dueDate?: string;
+  estimatedMinutes?: number;
+  captureId?: string;
+  goalId?: string;
 }
 
 export interface UpdateTaskRequest {
@@ -32,26 +44,32 @@ export interface UpdateTaskRequest {
   dueDate?: string | null;
   estimatedMinutes?: number | null;
   status?: TaskStatus;
+  goalId?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class TaskService {
+
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl =
-    'http://localhost:8080/api/tasks';
+  private readonly baseUrl = 'http://localhost:8080/api/tasks';
 
   getTasks(): Observable<TaskResponse[]> {
-    return this.http.get<TaskResponse[]>(
-      this.baseUrl
-    );
+    return this.http.get<TaskResponse[]>(this.baseUrl);
   }
 
   getTask(id: string): Observable<TaskResponse> {
     return this.http.get<TaskResponse>(
       `${this.baseUrl}/${id}`
+    );
+  }
+
+  createTask(request: CreateTaskRequest): Observable<TaskResponse> {
+    return this.http.post<TaskResponse>(
+      this.baseUrl,
+      request
     );
   }
 
@@ -68,6 +86,12 @@ export class TaskService {
   deleteTask(id: string): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/${id}`
+    );
+  }
+
+  removeTaskFromGoal(taskId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/${taskId}/goal`
     );
   }
 }

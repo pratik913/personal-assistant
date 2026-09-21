@@ -2,7 +2,6 @@ package com.personalassistant.mapper;
 
 import com.personalassistant.dto.CreateTaskRequest;
 import com.personalassistant.dto.TaskResponse;
-import com.personalassistant.dto.UpdateTaskRequest;
 import com.personalassistant.entity.Task;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +38,10 @@ public class TaskMapper {
 
         if (task.getCapture() != null) {
             response.setCaptureId(task.getCapture().getId());
+        }
+
+        if (task.getGoal() != null) {
+            response.setGoalId(task.getGoal().getId());
         }
 
         return response;

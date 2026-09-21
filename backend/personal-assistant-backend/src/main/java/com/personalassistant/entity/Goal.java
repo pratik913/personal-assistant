@@ -9,10 +9,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "goals")
 @Getter
 @Setter
-public class Task {
+public class Goal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -24,20 +24,7 @@ public class Task {
     @Column(length = 5000)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TaskStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TaskPriority priority;
-
-    private LocalDate dueDate;
-
-    private Integer estimatedMinutes;
-
-    @Column(nullable = false)
-    private boolean aiGenerated = false;
+    private LocalDate targetDate;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -48,14 +35,6 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "capture_id")
-    private Capture capture;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "goal_id")
-    private Goal goal;
 
     @PrePersist
     protected void onCreate() {
