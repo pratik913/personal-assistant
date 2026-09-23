@@ -25,17 +25,22 @@ import {
   UpdateTaskRequest
 } from '../../services/task.service';
 
+import { TaskExecution }
+  from '../../shared/task-execution/task-execution';
+
 @Component({
   selector: 'app-task-details',
   imports: [
     RouterLink,
     DatePipe,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    TaskExecution
   ],
   templateUrl: './task-details.html',
   styleUrl: './task-details.scss'
 })
 export class TaskDetails {
+
   private readonly route =
     inject(ActivatedRoute);
 
@@ -64,6 +69,7 @@ export class TaskDetails {
   showDeleteConfirmation = false;
 
   taskForm = new FormGroup({
+
     title: new FormControl('', {
       nonNullable: true,
       validators: [
@@ -103,13 +109,17 @@ export class TaskDetails {
   });
 
   ngOnInit(): void {
+
     const taskId =
       this.route.snapshot.paramMap.get('id');
 
     if (!taskId) {
+
       this.isLoading = false;
+
       this.errorMessage =
         'Task ID is missing.';
+
       return;
     }
 
@@ -117,50 +127,71 @@ export class TaskDetails {
   }
 
   private loadTask(taskId: string): void {
+
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.taskService.getTask(taskId).subscribe({
-      next: (task) => {
-        this.task = task;
-        this.isLoading = false;
+    this.taskService
+      .getTask(taskId)
+      .subscribe({
 
-        this.populateForm(task);
+        next: (task) => {
 
-        this.changeDetectorRef.detectChanges();
-      },
+          this.task = task;
+          this.isLoading = false;
 
-      error: (error) => {
-        console.error(
-          'Failed to load task:',
-          error
-        );
+          this.populateForm(task);
 
-        this.isLoading = false;
+          this.changeDetectorRef.detectChanges();
+        },
 
-        if (error.status === 404) {
-          this.errorMessage =
-            'Task not found or you do not have access to it.';
-        } else if (error.status === 401) {
-          this.errorMessage =
-            'Your session has expired. Please log in again.';
-        } else {
-          this.errorMessage =
-            'Unable to load this task.';
+        error: (error) => {
+
+          console.error(
+            'Failed to load task:',
+            error
+          );
+
+          this.isLoading = false;
+
+          if (error.status === 404) {
+
+            this.errorMessage =
+              'Task not found or you do not have access to it.';
+
+          } else if (error.status === 401) {
+
+            this.errorMessage =
+              'Your session has expired. Please log in again.';
+
+          } else {
+
+            this.errorMessage =
+              'Unable to load this task.';
+          }
+
+          this.changeDetectorRef.detectChanges();
         }
-
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+      });
   }
 
-  private populateForm(task: TaskResponse): void {
+  private populateForm(
+    task: TaskResponse
+  ): void {
+
     this.taskForm.patchValue({
+
       title: task.title,
-      description: task.description ?? '',
+
+      description:
+        task.description ?? '',
+
       priority: task.priority,
+
       dueDate: task.dueDate,
-      estimatedMinutes: task.estimatedMinutes
+
+      estimatedMinutes:
+        task.estimatedMinutes
     });
 
     this.taskForm.markAsPristine();
@@ -168,6 +199,7 @@ export class TaskDetails {
   }
 
   startEditing(): void {
+
     if (!this.task) {
       return;
     }
@@ -181,6 +213,7 @@ export class TaskDetails {
   }
 
   cancelEditing(): void {
+
     if (!this.task) {
       return;
     }
@@ -195,16 +228,20 @@ export class TaskDetails {
   }
 
   saveTask(): void {
+
     if (!this.task) {
       return;
     }
 
     if (this.taskForm.invalid) {
+
       this.taskForm.markAllAsTouched();
+
       return;
     }
 
     const request: UpdateTaskRequest = {
+
       title:
         this.taskForm.controls.title.value.trim(),
 
@@ -233,7 +270,9 @@ export class TaskDetails {
         request
       )
       .subscribe({
+
         next: (updatedTask) => {
+
           this.task = updatedTask;
 
           this.populateForm(updatedTask);
@@ -248,6 +287,7 @@ export class TaskDetails {
         },
 
         error: (error) => {
+
           console.error(
             'Failed to update task:',
             error
@@ -256,16 +296,23 @@ export class TaskDetails {
           this.isSaving = false;
 
           if (error.status === 400) {
+
             this.saveError =
               error.error?.message ??
               'Please check the task details.';
+
           } else if (error.status === 404) {
+
             this.saveError =
               'Task not found or you do not have access to it.';
+
           } else if (error.status === 401) {
+
             this.saveError =
               'Your session has expired. Please log in again.';
+
           } else {
+
             this.saveError =
               'Unable to update the task.';
           }
@@ -276,6 +323,7 @@ export class TaskDetails {
   }
 
   openDeleteConfirmation(): void {
+
     if (!this.task || this.isDeleting) {
       return;
     }
@@ -285,6 +333,7 @@ export class TaskDetails {
   }
 
   cancelDelete(): void {
+
     if (this.isDeleting) {
       return;
     }
@@ -294,6 +343,7 @@ export class TaskDetails {
   }
 
   confirmDelete(): void {
+
     if (!this.task || this.isDeleting) {
       return;
     }
@@ -304,7 +354,9 @@ export class TaskDetails {
     this.taskService
       .deleteTask(this.task.id)
       .subscribe({
+
         next: () => {
+
           this.isDeleting = false;
           this.showDeleteConfirmation = false;
 
@@ -312,6 +364,7 @@ export class TaskDetails {
         },
 
         error: (error) => {
+
           console.error(
             'Failed to delete task:',
             error
@@ -320,12 +373,17 @@ export class TaskDetails {
           this.isDeleting = false;
 
           if (error.status === 404) {
+
             this.deleteError =
               'Task not found or you do not have access to it.';
+
           } else if (error.status === 401) {
+
             this.deleteError =
               'Your session has expired. Please log in again.';
+
           } else {
+
             this.deleteError =
               'Unable to delete the task. Please try again.';
           }
@@ -338,14 +396,16 @@ export class TaskDetails {
   getPriorityClass(
     priority: string
   ): string {
+
     return priority.toLowerCase();
   }
 
   getStatusClass(
     status: string
   ): string {
+
     return status
       .toLowerCase()
       .replace('_', '-');
   }
-}
+} 

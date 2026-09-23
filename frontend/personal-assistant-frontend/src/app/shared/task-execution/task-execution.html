@@ -1,0 +1,321 @@
+<section class="execution-card">
+
+  <!-- =========================
+       HEADER
+       ========================= -->
+
+  <div class="card-header">
+
+    <div>
+
+      <span class="eyebrow">
+        Execution
+      </span>
+
+      <h2>
+        Work on this task
+      </h2>
+
+    </div>
+
+    @if (activeExecution) {
+
+      <span class="execution-active-badge">
+        ● In Progress
+      </span>
+
+    }
+
+  </div>
+
+
+  <!-- =========================
+       CONTENT
+       ========================= -->
+
+  <div class="execution-content">
+
+    <!-- Success -->
+
+    @if (successMessage) {
+
+      <div class="success-message">
+
+        <span>
+          ✓
+        </span>
+
+        {{ successMessage }}
+
+      </div>
+
+    }
+
+
+    <!-- Error -->
+
+    @if (errorMessage) {
+
+      <div class="error-message">
+        {{ errorMessage }}
+      </div>
+
+    }
+
+
+    <!-- Loading -->
+
+    @if (isLoading) {
+
+      <div class="execution-empty">
+        Loading execution history...
+      </div>
+
+    } @else {
+
+      <!-- =========================
+           ACTIVE EXECUTION
+           ========================= -->
+
+      @if (activeExecution) {
+
+        <div class="active-execution">
+
+          <div class="active-execution-info">
+
+            <span class="execution-label">
+              Started
+            </span>
+
+            <strong>
+              {{ activeExecution.startedAt | date:'dd MMM yyyy, HH:mm' }}
+            </strong>
+
+          </div>
+
+
+          <!-- Feedback -->
+
+          <div class="feedback-group">
+
+            <label for="executionFeedback">
+              How did the task go?
+            </label>
+
+            <textarea
+              id="executionFeedback"
+              [(ngModel)]="feedback"
+              rows="4"
+              maxlength="2000"
+              placeholder="Add optional feedback about this work session..."
+            ></textarea>
+
+            <span class="feedback-hint">
+              {{ feedback.length }}/2000
+            </span>
+
+          </div>
+
+
+          <!-- Finish -->
+
+          <button
+            type="button"
+            class="primary-button finish-button"
+            (click)="finishExecution()"
+            [disabled]="isFinishing"
+          >
+
+            @if (isFinishing) {
+
+              Finishing...
+
+            } @else {
+
+              ✓ Finish Working
+
+            }
+
+          </button>
+
+        </div>
+
+
+      } @else {
+
+        <!-- =========================
+             START EXECUTION
+             ========================= -->
+
+        <div class="start-execution">
+
+          <div>
+
+            <h3>
+              Ready to work?
+            </h3>
+
+            <p>
+              Start a work session to track how much time
+              you spend on this task.
+            </p>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="startExecution()"
+            [disabled]="isStarting"
+          >
+
+            @if (isStarting) {
+
+              Starting...
+
+            } @else {
+
+              ▶ Start Working
+
+            }
+
+          </button>
+
+        </div>
+
+      }
+
+    }
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     EXECUTION HISTORY
+     ===================================================== -->
+
+<section class="execution-card history-card">
+
+  <div class="card-header">
+
+    <div>
+
+      <span class="eyebrow">
+        History
+      </span>
+
+      <h2>
+        Execution History
+      </h2>
+
+    </div>
+
+
+    <span class="history-count">
+      {{ executions.length }}
+    </span>
+
+  </div>
+
+
+  <div class="execution-content">
+
+    @if (isLoading) {
+
+      <div class="execution-empty">
+        Loading execution history...
+      </div>
+
+    } @else if (executions.length === 0) {
+
+      <div class="execution-empty">
+
+        <div class="empty-execution-icon">
+          ▶
+        </div>
+
+        <h3>
+          No work sessions yet
+        </h3>
+
+        <p>
+          Start working on this task to create
+          your first execution record.
+        </p>
+
+      </div>
+
+    } @else {
+
+      <div class="execution-history">
+
+        @for (
+          execution of executions;
+          track execution.id
+        ) {
+
+          <article class="execution-item">
+
+            <div class="execution-status">
+
+              <span
+                class="execution-status-dot"
+                [class.completed]="execution.status === 'COMPLETED'"
+                [class.cancelled]="execution.status === 'CANCELLED'"
+                [class.started]="execution.status === 'STARTED'"
+              ></span>
+
+            </div>
+
+
+            <div class="execution-details">
+
+              <div class="execution-row">
+
+                <strong>
+                  {{ execution.status }}
+                </strong>
+
+                <span>
+                  {{ execution.startedAt | date:'dd MMM yyyy, HH:mm' }}
+                </span>
+
+              </div>
+
+
+              @if (execution.endedAt) {
+
+                <div class="execution-time">
+
+                  Ended:
+                  {{ execution.endedAt | date:'dd MMM yyyy, HH:mm' }}
+
+                </div>
+
+              }
+
+
+              @if (execution.feedback) {
+
+                <p class="execution-feedback">
+                  "{{ execution.feedback }}"
+                </p>
+
+              }
+
+            </div>
+
+          </article>
+
+        }
+
+      </div>
+
+    }
+
+  </div>
+
+</section>

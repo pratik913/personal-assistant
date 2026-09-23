@@ -1,15 +1,24 @@
 @if (isLoading) {
 
   <section class="page">
+
     <div class="state-card">
+
       <div class="loading-spinner"></div>
-      <p>Loading task...</p>
+
+      <p>
+        Loading task...
+      </p>
+
     </div>
+
   </section>
+
 
 } @else if (errorMessage) {
 
   <section class="page">
+
     <div class="state-card error-state">
 
       <div class="state-icon">
@@ -32,7 +41,9 @@
       </a>
 
     </div>
+
   </section>
+
 
 } @else if (task) {
 
@@ -67,6 +78,7 @@
 
       </div>
 
+
       @if (!isEditing) {
 
         <div class="header-actions">
@@ -94,6 +106,7 @@
 
     </header>
 
+
     <!-- =========================
          SUCCESS MESSAGE
          ========================= -->
@@ -101,11 +114,17 @@
     @if (saveSuccess) {
 
       <div class="success-message">
-        <span>✓</span>
+
+        <span>
+          ✓
+        </span>
+
         {{ saveSuccess }}
+
       </div>
 
     }
+
 
     <!-- =========================
          EDIT MODE
@@ -122,6 +141,7 @@
         <div class="card-header">
 
           <div>
+
             <span class="eyebrow">
               Task
             </span>
@@ -129,13 +149,17 @@
             <h2>
               Edit Task
             </h2>
+
           </div>
 
         </div>
 
+
         <div class="form-content">
 
-          <!-- Title -->
+          <!-- =========================
+               TITLE
+               ========================= -->
 
           <div class="form-group">
 
@@ -151,27 +175,36 @@
               autocomplete="off"
             />
 
+
             @if (
               taskForm.controls.title.touched &&
               taskForm.controls.title.hasError('required')
             ) {
+
               <span class="field-error">
                 Title is required.
               </span>
+
             }
+
 
             @if (
               taskForm.controls.title.touched &&
               taskForm.controls.title.hasError('maxlength')
             ) {
+
               <span class="field-error">
                 Title cannot exceed 200 characters.
               </span>
+
             }
 
           </div>
 
-          <!-- Description -->
+
+          <!-- =========================
+               DESCRIPTION
+               ========================= -->
 
           <div class="form-group">
 
@@ -186,22 +219,28 @@
               placeholder="Describe what needs to be done..."
             ></textarea>
 
+
             @if (
               taskForm.controls.description.touched &&
               taskForm.controls.description.hasError('maxlength')
             ) {
+
               <span class="field-error">
                 Description cannot exceed 5000 characters.
               </span>
+
             }
 
           </div>
 
-          <!-- Row -->
+
+          <!-- =========================
+               FORM GRID
+               ========================= -->
 
           <div class="form-grid">
 
-            <!-- Priority -->
+            <!-- PRIORITY -->
 
             <div class="form-group">
 
@@ -230,7 +269,8 @@
 
             </div>
 
-            <!-- Due date -->
+
+            <!-- DUE DATE -->
 
             <div class="form-group">
 
@@ -246,7 +286,8 @@
 
             </div>
 
-            <!-- Estimated time -->
+
+            <!-- ESTIMATED TIME -->
 
             <div class="form-group">
 
@@ -270,13 +311,16 @@
 
               </div>
 
+
               @if (
                 taskForm.controls.estimatedMinutes.touched &&
                 taskForm.controls.estimatedMinutes.hasError('min')
               ) {
+
                 <span class="field-error">
                   Must be at least 1 minute.
                 </span>
+
               }
 
             </div>
@@ -284,6 +328,11 @@
           </div>
 
         </div>
+
+
+        <!-- =========================
+             SAVE ERROR
+             ========================= -->
 
         @if (saveError) {
 
@@ -293,7 +342,10 @@
 
         }
 
-        <!-- Form actions -->
+
+        <!-- =========================
+             FORM ACTIONS
+             ========================= -->
 
         <div class="form-actions">
 
@@ -306,6 +358,7 @@
             Cancel
           </button>
 
+
           <button
             type="submit"
             class="primary-button"
@@ -313,9 +366,13 @@
           >
 
             @if (isSaving) {
+
               Saving...
+
             } @else {
+
               Save Changes
+
             }
 
           </button>
@@ -323,6 +380,7 @@
         </div>
 
       </form>
+
 
     } @else {
 
@@ -332,7 +390,9 @@
 
       <div class="task-layout">
 
-        <!-- Main card -->
+        <!-- =========================
+             MAIN TASK CARD
+             ========================= -->
 
         <article class="task-card main-card">
 
@@ -347,6 +407,7 @@
                 {{ task.status.replace('_', ' ') }}
               </span>
 
+
               @if (task.captureId) {
 
                 <span class="source-badge">
@@ -357,6 +418,7 @@
 
             </div>
 
+
             <span
               class="priority-badge"
               [class]="getPriorityClass(task.priority)"
@@ -366,11 +428,13 @@
 
           </div>
 
+
           <div class="task-content">
 
             <h2>
               {{ task.title }}
             </h2>
+
 
             @if (task.description) {
 
@@ -390,13 +454,17 @@
 
         </article>
 
-        <!-- Metadata card -->
+
+        <!-- =========================
+             METADATA CARD
+             ========================= -->
 
         <aside class="task-card metadata-card">
 
           <div class="card-header">
 
             <div>
+
               <span class="eyebrow">
                 Overview
               </span>
@@ -404,11 +472,15 @@
               <h2>
                 Task Information
               </h2>
+
             </div>
 
           </div>
 
+
           <div class="metadata-list">
+
+            <!-- STATUS -->
 
             <div class="metadata-item">
 
@@ -422,6 +494,9 @@
 
             </div>
 
+
+            <!-- PRIORITY -->
+
             <div class="metadata-item">
 
               <span class="metadata-label">
@@ -434,6 +509,9 @@
 
             </div>
 
+
+            <!-- DUE DATE -->
+
             <div class="metadata-item">
 
               <span class="metadata-label">
@@ -443,14 +521,21 @@
               <span class="metadata-value">
 
                 @if (task.dueDate) {
+
                   {{ task.dueDate | date:'dd MMM yyyy' }}
+
                 } @else {
+
                   No due date
+
                 }
 
               </span>
 
             </div>
+
+
+            <!-- ESTIMATED TIME -->
 
             <div class="metadata-item">
 
@@ -461,14 +546,21 @@
               <span class="metadata-value">
 
                 @if (task.estimatedMinutes) {
+
                   {{ task.estimatedMinutes }} minutes
+
                 } @else {
+
                   Not specified
+
                 }
 
               </span>
 
             </div>
+
+
+            <!-- CREATED -->
 
             <div class="metadata-item">
 
@@ -481,6 +573,9 @@
               </span>
 
             </div>
+
+
+            <!-- LAST UPDATED -->
 
             <div class="metadata-item">
 
@@ -500,14 +595,25 @@
 
       </div>
 
+
+      <!-- =================================================
+           TASK EXECUTION COMPONENT
+           ================================================= -->
+
+      <app-task-execution
+        [taskId]="task.id"
+      />
+
     }
 
   </section>
+
 }
 
-<!-- =========================
+
+<!-- =========================================================
      DELETE CONFIRMATION
-     ========================= -->
+     ========================================================= -->
 
 @if (showDeleteConfirmation) {
 
@@ -525,19 +631,23 @@
         !
       </div>
 
+
       <span class="eyebrow">
         Delete Task
       </span>
 
+
       <h2>
         Delete this task?
       </h2>
+
 
       <p>
         This will permanently remove
         <strong>{{ task?.title }}</strong>.
         This action cannot be undone.
       </p>
+
 
       @if (deleteError) {
 
@@ -546,6 +656,7 @@
         </div>
 
       }
+
 
       <div class="delete-actions">
 
@@ -558,6 +669,7 @@
           Cancel
         </button>
 
+
         <button
           type="button"
           class="danger-button"
@@ -566,9 +678,13 @@
         >
 
           @if (isDeleting) {
+
             Deleting...
+
           } @else {
+
             Delete Task
+
           }
 
         </button>

@@ -27,6 +27,22 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(
+            ConflictException exception
+    ) {
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage(),
+                Instant.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException exception
@@ -95,6 +111,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleCaptureNotFound(
             CaptureNotFoundException exception
     ) {
+
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 exception.getMessage(),
@@ -105,6 +122,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(response);
     }
+
     @ExceptionHandler(ScheduleEntryNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleScheduleEntryNotFound(
             ScheduleEntryNotFoundException exception

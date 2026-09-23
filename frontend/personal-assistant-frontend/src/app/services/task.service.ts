@@ -3,14 +3,19 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export type TaskStatus =
-  | 'TODO'
-  | 'IN_PROGRESS'
-  | 'COMPLETED';
+  'TODO' |
+  'IN_PROGRESS' |
+  'COMPLETED';
 
 export type TaskPriority =
-  | 'LOW'
-  | 'MEDIUM'
-  | 'HIGH';
+  'LOW' |
+  'MEDIUM' |
+  'HIGH';
+
+export type TaskExecutionStatus =
+  'STARTED' |
+  'COMPLETED' |
+  'CANCELLED';
 
 export interface TaskResponse {
   id: string;
@@ -47,6 +52,25 @@ export interface UpdateTaskRequest {
   goalId?: string;
 }
 
+export interface CreateTaskExecutionRequest {
+  feedback?: string;
+}
+
+export interface UpdateTaskExecutionRequest {
+  status?: TaskExecutionStatus;
+  feedback?: string;
+}
+
+export interface TaskExecutionResponse {
+  id: string;
+  taskId: string;
+  startedAt: string;
+  endedAt: string | null;
+  status: TaskExecutionStatus;
+  feedback: string | null;
+  createdAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -54,19 +78,26 @@ export class TaskService {
 
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:8080/api/tasks';
+  private readonly baseUrl =
+    'http://localhost:8080/api/tasks';
 
   getTasks(): Observable<TaskResponse[]> {
-    return this.http.get<TaskResponse[]>(this.baseUrl);
+    return this.http.get<TaskResponse[]>(
+      this.baseUrl
+    );
   }
 
-  getTask(id: string): Observable<TaskResponse> {
+  getTask(
+    id: string
+  ): Observable<TaskResponse> {
     return this.http.get<TaskResponse>(
       `${this.baseUrl}/${id}`
     );
   }
 
-  createTask(request: CreateTaskRequest): Observable<TaskResponse> {
+  createTask(
+    request: CreateTaskRequest
+  ): Observable<TaskResponse> {
     return this.http.post<TaskResponse>(
       this.baseUrl,
       request
@@ -83,15 +114,51 @@ export class TaskService {
     );
   }
 
-  deleteTask(id: string): Observable<void> {
+  deleteTask(
+    id: string
+  ): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/${id}`
     );
   }
 
-  removeTaskFromGoal(taskId: string): Observable<void> {
+  removeTaskFromGoal(
+    taskId: string
+  ): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/${taskId}/goal`
+    );
+  }
+
+  startTaskExecution(
+    taskId: string,
+    request: CreateTaskExecutionRequest = {}
+  ): Observable<TaskExecutionResponse> {
+
+    return this.http.post<TaskExecutionResponse>(
+      `${this.baseUrl}/${taskId}/executions`,
+      request
+    );
+  }
+
+  updateTaskExecution(
+    taskId: string,
+    executionId: string,
+    request: UpdateTaskExecutionRequest
+  ): Observable<TaskExecutionResponse> {
+
+    return this.http.patch<TaskExecutionResponse>(
+      `${this.baseUrl}/${taskId}/executions/${executionId}`,
+      request
+    );
+  }
+
+  getTaskExecutions(
+    taskId: string
+  ): Observable<TaskExecutionResponse[]> {
+
+    return this.http.get<TaskExecutionResponse[]>(
+      `${this.baseUrl}/${taskId}/executions`
     );
   }
 }

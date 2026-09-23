@@ -8,9 +8,7 @@
 
 .page {
   width: min(1180px, 100%);
-
   margin: 0 auto;
-
   padding: 32px;
 }
 
@@ -22,9 +20,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-
   gap: 24px;
-
   margin-bottom: 28px;
 }
 
@@ -34,14 +30,10 @@
 
 .back-link {
   display: inline-flex;
-
   margin-bottom: 16px;
-
   color: var(--accent);
-
   font-size: 14px;
   font-weight: 500;
-
   text-decoration: none;
 }
 
@@ -57,31 +49,24 @@
 
 .eyebrow {
   color: var(--text-muted);
-
   font-size: 12px;
   font-weight: 600;
-
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .page-header h1 {
   margin: 0;
-
   color: var(--text-primary);
-
   font-size: clamp(28px, 4vw, 38px);
   line-height: 1.15;
-
   word-break: break-word;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-
   gap: 10px;
-
   flex-shrink: 0;
 }
 
@@ -93,27 +78,18 @@
 .secondary-button,
 .danger-button {
   min-height: 42px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   padding: 0 16px;
-
   border-radius: var(--radius-md);
-
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
-
   line-height: 1;
-
   text-decoration: none;
-
   cursor: pointer;
-
   box-sizing: border-box;
-
   transition:
     background var(--transition),
     border-color var(--transition),
@@ -124,43 +100,36 @@
 
 .primary-button {
   border: 1px solid var(--accent);
-
   background: var(--accent);
-  color: #ffffff;
+  color: #fff;
 }
 
 .primary-button:hover:not(:disabled) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
-
   transform: translateY(-1px);
 }
 
 .secondary-button {
   border: 1px solid var(--border);
-
   background: var(--surface);
   color: var(--text-primary);
 }
 
 .secondary-button:hover:not(:disabled) {
   background: var(--surface-hover);
-
   border-color: var(--accent);
-
   color: var(--accent);
 }
 
 .danger-button {
   border: 1px solid var(--danger);
-
   background: var(--danger);
-  color: #ffffff;
+  color: #fff;
 }
 
 .danger-button:hover:not(:disabled) {
   opacity: 0.9;
-
   transform: translateY(-1px);
 }
 
@@ -168,9 +137,7 @@
 .secondary-button:disabled,
 .danger-button:disabled {
   opacity: 0.55;
-
   cursor: not-allowed;
-
   transform: none;
 }
 
@@ -183,30 +150,22 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-
   margin-bottom: 20px;
-
   padding: 12px 14px;
-
   border-radius: var(--radius-md);
-
   font-size: 14px;
   line-height: 1.5;
 }
 
 .success-message {
   border: 1px solid rgba(34, 181, 115, 0.25);
-
   background: rgba(34, 181, 115, 0.1);
-
   color: var(--success);
 }
 
 .error-message {
   border: 1px solid rgba(239, 71, 111, 0.25);
-
   background: rgba(239, 71, 111, 0.1);
-
   color: var(--danger);
 }
 
@@ -216,13 +175,9 @@
 
 .task-card {
   border: 1px solid var(--border);
-
   border-radius: var(--radius-lg);
-
   background: var(--surface);
-
   box-shadow: var(--shadow-sm);
-
   transition:
     background var(--transition),
     border-color var(--transition);
@@ -230,15 +185,12 @@
 
 .card-header {
   padding: 24px 28px;
-
   border-bottom: 1px solid var(--border);
 }
 
 .card-header h2 {
   margin: 4px 0 0;
-
   color: var(--text-primary);
-
   font-size: 20px;
   line-height: 1.3;
 }
@@ -249,31 +201,25 @@
 
 .task-layout {
   display: grid;
-
-  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.8fr);
-
+  grid-template-columns:
+    minmax(0, 1.65fr)
+    minmax(280px, 0.8fr);
   gap: 20px;
-
   align-items: start;
 }
 
 .main-card {
   min-width: 0;
-
   overflow: hidden;
 }
 
 .task-card-top {
   min-height: 72px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 16px;
-
   padding: 20px 24px;
-
   border-bottom: 1px solid var(--border);
 }
 
@@ -281,7 +227,6 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-
   gap: 8px;
 }
 
@@ -291,23 +236,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   min-height: 26px;
-
   padding: 0 10px;
-
   border-radius: 999px;
-
   font-size: 11px;
   font-weight: 700;
-
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .status-badge {
   background: var(--bg-tertiary);
-
   color: var(--text-secondary);
 }
 
@@ -328,15 +267,12 @@
 
 .source-badge {
   background: var(--accent-soft);
-
   color: var(--accent);
-
   text-transform: none;
 }
 
 .priority-badge {
   background: var(--bg-tertiary);
-
   color: var(--text-secondary);
 }
 
@@ -361,33 +297,24 @@
 
 .task-content h2 {
   margin: 0 0 12px;
-
   color: var(--text-primary);
-
   font-size: 24px;
   line-height: 1.3;
-
   word-break: break-word;
 }
 
 .description {
   margin: 0;
-
   color: var(--text-secondary);
-
   font-size: 15px;
   line-height: 1.7;
-
   white-space: pre-wrap;
 }
 
 .empty-description {
   margin: 0;
-
   color: var(--text-muted);
-
   font-size: 14px;
-
   font-style: italic;
 }
 
@@ -397,7 +324,6 @@
 
 .metadata-card {
   min-width: 0;
-
   overflow: hidden;
 }
 
@@ -409,11 +335,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-
   gap: 20px;
-
   padding: 15px 0;
-
   border-bottom: 1px solid var(--border);
 }
 
@@ -423,16 +346,13 @@
 
 .metadata-label {
   color: var(--text-muted);
-
   font-size: 13px;
 }
 
 .metadata-value {
   color: var(--text-primary);
-
   font-size: 13px;
   font-weight: 600;
-
   text-align: right;
 }
 
@@ -450,10 +370,8 @@
 
 .form-group {
   width: 100%;
-
   display: flex;
   flex-direction: column;
-
   gap: 8px;
 }
 
@@ -463,9 +381,7 @@
 
 .form-group label {
   display: block;
-
   color: var(--text-primary);
-
   font-size: 13px;
   font-weight: 600;
 }
@@ -474,22 +390,15 @@
 .form-group textarea,
 .form-group select {
   width: 100%;
-
   display: block;
-
   box-sizing: border-box;
-
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-
   background: var(--bg-primary);
   color: var(--text-primary);
-
   font-family: inherit;
   font-size: 14px;
-
   outline: none;
-
   transition:
     border-color var(--transition),
     box-shadow var(--transition),
@@ -499,17 +408,13 @@
 .form-group input,
 .form-group select {
   height: 44px;
-
   padding: 0 13px;
 }
 
 .form-group textarea {
   min-height: 130px;
-
   padding: 12px 13px;
-
   resize: vertical;
-
   line-height: 1.5;
 }
 
@@ -522,9 +427,7 @@
 .form-group textarea:focus,
 .form-group select:focus {
   border-color: var(--accent);
-
-  box-shadow:
-    0 0 0 3px var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .form-group input.ng-invalid.ng-touched,
@@ -535,12 +438,9 @@
 
 .form-grid {
   display: grid;
-
   grid-template-columns:
     repeat(3, minmax(0, 1fr));
-
   gap: 16px;
-
   margin-top: 22px;
 }
 
@@ -558,22 +458,16 @@
 
 .input-with-suffix span {
   position: absolute;
-
   top: 50%;
   right: 13px;
-
   transform: translateY(-50%);
-
   color: var(--text-muted);
-
   font-size: 12px;
-
   pointer-events: none;
 }
 
 .field-error {
   color: var(--danger);
-
   font-size: 12px;
   line-height: 1.4;
 }
@@ -581,13 +475,9 @@
 .form-actions {
   display: flex;
   justify-content: flex-end;
-
   gap: 10px;
-
   padding: 20px 28px;
-
   border-top: 1px solid var(--border);
-
   background: var(--bg-secondary);
 }
 
@@ -597,54 +487,41 @@
 
 .state-card {
   min-height: 280px;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   padding: 32px;
-
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-
   background: var(--surface);
-
   text-align: center;
 }
 
 .state-card p {
   margin: 12px 0 0;
-
   color: var(--text-secondary);
 }
 
 .error-state h2 {
   margin: 14px 0 8px;
-
   color: var(--text-primary);
 }
 
 .error-state p {
   max-width: 420px;
-
   margin-bottom: 20px;
 }
 
 .state-icon {
   width: 46px;
   height: 46px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 50%;
-
   background: rgba(239, 71, 111, 0.12);
-
   color: var(--danger);
-
   font-size: 20px;
   font-weight: 700;
 }
@@ -652,12 +529,9 @@
 .loading-spinner {
   width: 28px;
   height: 28px;
-
   border: 3px solid var(--border);
   border-top-color: var(--accent);
-
   border-radius: 50%;
-
   animation: spin 0.8s linear infinite;
 }
 
@@ -674,67 +548,47 @@
 .delete-overlay {
   position: fixed;
   inset: 0;
-
   z-index: 1000;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 24px;
-
   background: rgba(0, 0, 0, 0.6);
 }
 
 .delete-dialog {
   width: min(440px, 100%);
-
   padding: 30px;
-
   border: 1px solid var(--border);
-
   border-radius: var(--radius-xl);
-
   background: var(--surface);
-
   box-shadow: var(--shadow-md);
-
   text-align: center;
 }
 
 .delete-icon {
   width: 50px;
   height: 50px;
-
   margin: 0 auto 16px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 50%;
-
   background: rgba(239, 71, 111, 0.12);
-
   color: var(--danger);
-
   font-size: 20px;
   font-weight: 700;
 }
 
 .delete-dialog h2 {
   margin: 6px 0 10px;
-
   color: var(--text-primary);
-
   font-size: 22px;
 }
 
 .delete-dialog p {
   margin: 0;
-
   color: var(--text-secondary);
-
   font-size: 14px;
   line-height: 1.6;
 }
@@ -745,16 +599,13 @@
 
 .delete-dialog .error-message {
   margin-top: 18px;
-
   text-align: left;
 }
 
 .delete-actions {
   display: flex;
   justify-content: center;
-
   gap: 10px;
-
   margin-top: 26px;
 }
 
@@ -780,7 +631,6 @@
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
-
 }
 
 @media (max-width: 700px) {
@@ -791,9 +641,7 @@
 
   .page-header {
     align-items: stretch;
-
     flex-direction: column;
-
     gap: 18px;
   }
 
@@ -807,7 +655,6 @@
 
   .task-card-top {
     align-items: flex-start;
-
     flex-direction: column;
   }
 
@@ -825,7 +672,6 @@
 
   .form-actions {
     padding: 18px 22px;
-
     flex-direction: column-reverse;
   }
 
@@ -849,7 +695,6 @@
   .delete-actions button {
     width: 100%;
   }
-
 }
 
 @media (max-width: 450px) {
@@ -864,12 +709,10 @@
 
   .metadata-item {
     flex-direction: column;
-
     gap: 5px;
   }
 
   .metadata-value {
     text-align: left;
   }
-
 }
