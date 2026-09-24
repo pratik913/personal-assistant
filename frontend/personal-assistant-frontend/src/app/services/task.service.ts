@@ -17,6 +17,25 @@ export type TaskExecutionStatus =
   'COMPLETED' |
   'CANCELLED';
 
+export type ExecutionDifficulty =
+  'EASY' |
+  'MEDIUM' |
+  'HARD';
+
+export type ExecutionTimeAssessment =
+  'UNDERESTIMATED' |
+  'ACCURATE' |
+  'OVERESTIMATED';
+
+export type ExecutionBlocker =
+  'NONE' |
+  'KNOWLEDGE_GAP' |
+  'TECHNICAL_ISSUE' |
+  'DISTRACTION' |
+  'UNCLEAR_REQUIREMENT' |
+  'EXTERNAL_DEPENDENCY' |
+  'OTHER';
+
 export interface TaskResponse {
   id: string;
   title: string;
@@ -68,6 +87,17 @@ export interface TaskExecutionResponse {
   endedAt: string | null;
   status: TaskExecutionStatus;
   feedback: string | null;
+  createdAt: string;
+}
+
+export interface ExecutionAnalysisResponse {
+  id: string;
+  executionId: string;
+  difficulty: ExecutionDifficulty;
+  timeAssessment: ExecutionTimeAssessment;
+  blocker: ExecutionBlocker;
+  insight: string | null;
+  suggestion: string | null;
   createdAt: string;
 }
 
@@ -159,6 +189,27 @@ export class TaskService {
 
     return this.http.get<TaskExecutionResponse[]>(
       `${this.baseUrl}/${taskId}/executions`
+    );
+  }
+
+  getExecutionAnalysis(
+    taskId: string,
+    executionId: string
+  ): Observable<ExecutionAnalysisResponse> {
+
+    return this.http.get<ExecutionAnalysisResponse>(
+      `${this.baseUrl}/${taskId}/executions/${executionId}/analysis`
+    );
+  }
+
+  analyzeExecution(
+    taskId: string,
+    executionId: string
+  ): Observable<ExecutionAnalysisResponse> {
+
+    return this.http.post<ExecutionAnalysisResponse>(
+      `${this.baseUrl}/${taskId}/executions/${executionId}/analysis`,
+      {}
     );
   }
 }

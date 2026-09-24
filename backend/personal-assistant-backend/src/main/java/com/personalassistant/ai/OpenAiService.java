@@ -10,6 +10,7 @@ import com.personalassistant.dto.AiPlanData;
 import com.personalassistant.exception.AiErrorType;
 import com.personalassistant.exception.AiProcessingException;
 import org.springframework.stereotype.Service;
+import com.personalassistant.dto.ExecutionAnalysis;
 
 @Service
 public class OpenAiService implements AiService {
@@ -167,6 +168,97 @@ public class OpenAiService implements AiService {
                             new AiProcessingException(
                                     AiErrorType.INVALID_RESPONSE,
                                     "AI returned an invalid planning response."
+                            )
+                    );
+
+        } catch (AiProcessingException exception) {
+
+            throw exception;
+
+        } catch (RuntimeException exception) {
+
+            throw classifyException(exception);
+        }
+    }
+
+    @Override
+    public ExecutionAnalysis analyzeExecution(
+            String taskTitle,
+            String taskDescription,
+            Integer estimatedMinutes,
+            long actualMinutes,
+            String feedback
+    ) {
+
+        try {
+
+            StructuredResponseCreateParams<ExecutionAnalysis> params =
+                    ResponseCreateParams.builder()
+                            .input("""
+                            You are an AI productivity assistant.
+
+                            Your job is to analyze how a user performed a task
+                            after completing a work session.
+
+                            Analyze the task information, estimated duration,
+                            actual duration, and user's feedback.
+
+                            Rules:
+                            - Determine the difficulty as EASY, MEDIUM, or HARD.
+                            - Determine whether the original time estimate was
+                              UNDERESTIMATED, ACCURATE, or OVERESTIMATED.
+                            - Identify the main blocker if one exists.
+                            - Use NONE when there was no meaningful blocker.
+                            - Do not invent a blocker that is not supported
+                              by the feedback.
+                            - Keep the insight concise and factual.
+                            - Provide a practical suggestion when useful.
+                            - Do not modify the task.
+                            - Return only the requested structured output.
+
+                            Task title:
+                            %s
+
+                            Task description:
+                            %s
+
+                            Estimated duration:
+                            %s minutes
+
+                            Actual duration:
+                            %s minutes
+
+                            User feedback:
+                            %s
+                            """.formatted(
+                                    taskTitle,
+                                    taskDescription != null
+                                            ? taskDescription
+                                            : "No description provided.",
+                                    estimatedMinutes != null
+                                            ? estimatedMinutes
+                                            : "Not specified",
+                                    actualMinutes,
+                                    feedback != null && !feedback.isBlank()
+                                            ? feedback
+                                            : "No feedback provided."
+                            ))
+                            .model(ChatModel.GPT_5)
+                            .text(ExecutionAnalysis.class)
+                            .build();
+
+            return client.responses()
+                    .create(params)
+                    .output()
+                    .stream()
+                    .flatMap(item -> item.message().stream())
+                    .flatMap(message -> message.content().stream())
+                    .flatMap(contentItem -> contentItem.outputText().stream())
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new AiProcessingException(
+                                    AiErrorType.INVALID_RESPONSE,
+                                    "AI returned an invalid execution analysis."
                             )
                     );
 

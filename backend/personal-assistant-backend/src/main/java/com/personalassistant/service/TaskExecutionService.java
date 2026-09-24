@@ -17,6 +17,7 @@ import com.personalassistant.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +48,6 @@ public class TaskExecutionService {
             UUID userId,
             CreateTaskExecutionRequest request
     ) {
-
         Task task = getOwnedTask(taskId, userId);
 
         User user = userRepository.findById(userId)
@@ -56,12 +56,11 @@ public class TaskExecutionService {
                 );
 
         boolean activeExecutionExists =
-                taskExecutionRepository
-                        .existsByTaskIdAndUserIdAndStatus(
-                                taskId,
-                                userId,
-                                TaskExecutionStatus.STARTED
-                        );
+                taskExecutionRepository.existsByTaskIdAndUserIdAndStatus(
+                        taskId,
+                        userId,
+                        TaskExecutionStatus.STARTED
+                );
 
         if (activeExecutionExists) {
             throw new ConflictException(
@@ -92,7 +91,6 @@ public class TaskExecutionService {
             UUID userId,
             UpdateTaskExecutionRequest request
     ) {
-
         getOwnedTask(taskId, userId);
 
         TaskExecution execution =
@@ -131,7 +129,6 @@ public class TaskExecutionService {
             UUID taskId,
             UUID userId
     ) {
-
         getOwnedTask(taskId, userId);
 
         return taskExecutionRepository
@@ -144,11 +141,32 @@ public class TaskExecutionService {
                 .toList();
     }
 
+    /**
+     * Calculates the actual duration of a completed execution.
+     *
+     * The duration is calculated by the application using the
+     * persisted start and end timestamps. We do not ask the AI
+     * to calculate this value.
+     */
+    private long calculateActualMinutes(
+            TaskExecution execution
+    ) {
+        if (execution.getEndedAt() == null) {
+            throw new IllegalStateException(
+                    "Execution must be completed before analysis."
+            );
+        }
+
+        return Duration.between(
+                execution.getStartedAt(),
+                execution.getEndedAt()
+        ).toMinutes();
+    }
+
     private Task getOwnedTask(
             UUID taskId,
             UUID userId
     ) {
-
         return taskRepository
                 .findByIdAndUserId(taskId, userId)
                 .orElseThrow(() ->

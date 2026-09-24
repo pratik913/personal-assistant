@@ -259,6 +259,10 @@
 
           <article class="execution-item">
 
+            <!-- =========================
+                 STATUS
+                 ========================= -->
+
             <div class="execution-status">
 
               <span
@@ -270,6 +274,10 @@
 
             </div>
 
+
+            <!-- =========================
+                 EXECUTION DETAILS
+                 ========================= -->
 
             <div class="execution-details">
 
@@ -303,6 +311,253 @@
                 <p class="execution-feedback">
                   "{{ execution.feedback }}"
                 </p>
+
+              }
+
+
+              <!-- =====================================
+                   AI ANALYSIS
+                   ===================================== -->
+
+              @if (execution.status === 'COMPLETED') {
+
+                <div class="execution-analysis">
+
+                  <!-- ===============================
+                       ANALYZE BUTTON
+                       =============================== -->
+
+                  @if (
+                    shouldShowAnalyzeButton(execution)
+                  ) {
+
+                    <div class="analysis-prompt">
+
+                      <div class="analysis-prompt-content">
+
+                        <span class="analysis-icon">
+                          ✦
+                        </span>
+
+                        <div>
+
+                          <strong>
+                            Understand this work session
+                          </strong>
+
+                          <p>
+                            Let AI analyze your difficulty,
+                            time estimation and blockers.
+                          </p>
+
+                        </div>
+
+                      </div>
+
+
+                      <button
+                        type="button"
+                        class="secondary-button analysis-button"
+                        (click)="analyzeExecution(execution)"
+                        [disabled]="isAnalyzing(execution.id)"
+                      >
+
+                        @if (
+                          isAnalyzing(execution.id)
+                        ) {
+
+                          <span class="analysis-spinner"></span>
+
+                          Analyzing...
+
+                        } @else {
+
+                          ✦ Analyze with AI
+
+                        }
+
+                      </button>
+
+                    </div>
+
+                  }
+
+
+                  <!-- ===============================
+                       ANALYSIS LOADING
+                       =============================== -->
+
+                  @if (
+                    isAnalyzing(execution.id)
+                  ) {
+
+                    <div class="analysis-loading">
+
+                      <span class="analysis-spinner"></span>
+
+                      <div>
+
+                        <strong>
+                          AI is analyzing your session...
+                        </strong>
+
+                        <p>
+                          Reviewing your execution time,
+                          feedback and task details.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  }
+
+
+                  <!-- ===============================
+                       ANALYSIS RESULT
+                       =============================== -->
+
+                  @if (
+                    hasAnalysis(execution.id)
+                  ) {
+
+                    @let analysis =
+                      getAnalysis(execution.id);
+
+                    @if (analysis) {
+
+                      <div class="analysis-result">
+
+                        <!-- Header -->
+
+                        <div class="analysis-header">
+
+                          <div>
+
+                            <span class="analysis-eyebrow">
+                              AI Execution Analysis
+                            </span>
+
+                            <h3>
+                              Session Insights
+                            </h3>
+
+                          </div>
+
+                          <span class="analysis-ai-badge">
+                            AI
+                          </span>
+
+                        </div>
+
+
+                        <!-- Metrics -->
+
+                        <div class="analysis-metrics">
+
+                          <!-- Difficulty -->
+
+                          <div class="analysis-metric">
+
+                            <span class="metric-label">
+                              Difficulty
+                            </span>
+
+                            <span
+                              class="analysis-badge"
+                              [class.easy]="analysis.difficulty === 'EASY'"
+                              [class.medium]="analysis.difficulty === 'MEDIUM'"
+                              [class.hard]="analysis.difficulty === 'HARD'"
+                            >
+                              {{ analysis.difficulty }}
+                            </span>
+
+                          </div>
+
+
+                          <!-- Time Assessment -->
+
+                          <div class="analysis-metric">
+
+                            <span class="metric-label">
+                              Time Assessment
+                            </span>
+
+                            <span
+                              class="analysis-badge"
+                              [class.underestimated]="analysis.timeAssessment === 'UNDERESTIMATED'"
+                              [class.accurate]="analysis.timeAssessment === 'ACCURATE'"
+                              [class.overestimated]="analysis.timeAssessment === 'OVERESTIMATED'"
+                            >
+                              {{ analysis.timeAssessment }}
+                            </span>
+
+                          </div>
+
+
+                          <!-- Blocker -->
+
+                          <div class="analysis-metric">
+
+                            <span class="metric-label">
+                              Blocker
+                            </span>
+
+                            <span
+                              class="analysis-badge blocker-badge"
+                            >
+                              {{ analysis.blocker }}
+                            </span>
+
+                          </div>
+
+                        </div>
+
+
+                        <!-- Insight -->
+
+                        @if (analysis.insight) {
+
+                          <div class="analysis-section">
+
+                            <span class="analysis-section-label">
+                              Insight
+                            </span>
+
+                            <p>
+                              {{ analysis.insight }}
+                            </p>
+
+                          </div>
+
+                        }
+
+
+                        <!-- Suggestion -->
+
+                        @if (analysis.suggestion) {
+
+                          <div class="analysis-section suggestion-section">
+
+                            <span class="analysis-section-label">
+                              Suggested Improvement
+                            </span>
+
+                            <p>
+                              {{ analysis.suggestion }}
+                            </p>
+
+                          </div>
+
+                        }
+
+                      </div>
+
+                    }
+
+                  }
+
+                </div>
 
               }
 
