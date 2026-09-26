@@ -17,16 +17,19 @@ import java.util.UUID;
 @Transactional
 public class NotificationPreferenceService {
 
-    private static final boolean DEFAULT_TASK_START_NOTIFICATIONS_ENABLED = true;
+    private static final boolean DEFAULT_TASK_START_NOTIFICATIONS_ENABLED =
+            true;
 
-    private static final int DEFAULT_REMINDER_MINUTES = 15;
+    private static final int DEFAULT_REMINDER_MINUTES =
+            15;
 
     private final NotificationPreferenceRepository
             notificationPreferenceRepository;
 
     private final UserRepository userRepository;
 
-    private final NotificationPreferenceMapper notificationPreferenceMapper;
+    private final NotificationPreferenceMapper
+            notificationPreferenceMapper;
 
     public NotificationPreferenceService(
             NotificationPreferenceRepository notificationPreferenceRepository,
@@ -63,9 +66,9 @@ public class NotificationPreferenceService {
     }
 
     /**
-     * Partially updates the user's notification preferences.
+     * Partially updates notification preferences.
      *
-     * Null fields are ignored because this is a PATCH operation.
+     * Null fields are ignored.
      */
     public NotificationPreferenceResponse updatePreferences(
             UUID userId,
@@ -95,6 +98,38 @@ public class NotificationPreferenceService {
             );
         }
 
+        if (
+                request.quietHoursEnabled()
+                        != null
+        ) {
+
+            preference.setQuietHoursEnabled(
+                    request.quietHoursEnabled()
+            );
+        }
+
+        if (
+                request.quietHoursStart()
+                        != null
+        ) {
+
+            preference.setQuietHoursStart(
+                    request.quietHoursStart()
+            );
+        }
+
+        if (
+                request.quietHoursEnd()
+                        != null
+        ) {
+
+            preference.setQuietHoursEnd(
+                    request.quietHoursEnd()
+            );
+        }
+
+        validateQuietHours(preference);
+
         NotificationPreference saved =
                 notificationPreferenceRepository.save(
                         preference
@@ -106,8 +141,46 @@ public class NotificationPreferenceService {
     }
 
     /**
+     * Ensures quiet hours are fully configured
+     * when the feature is enabled.
+     */
+    private void validateQuietHours(
+            NotificationPreference preference
+    ) {
+
+        if (
+                !preference.isQuietHoursEnabled()
+        ) {
+
+            return;
+        }
+
+        if (
+                preference.getQuietHoursStart() == null ||
+                        preference.getQuietHoursEnd() == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Quiet hours start and end time are required when quiet hours are enabled."
+            );
+        }
+
+        if (
+                preference.getQuietHoursStart()
+                        .equals(
+                                preference.getQuietHoursEnd()
+                        )
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Quiet hours start and end time must be different."
+            );
+        }
+    }
+
+    /**
      * Returns an existing preference row or creates
-     * one with application defaults.
+     * one using application defaults.
      */
     private NotificationPreference getOrCreatePreference(
             UUID userId
@@ -115,11 +188,13 @@ public class NotificationPreferenceService {
 
         return notificationPreferenceRepository
                 .findByUserId(userId)
-                .orElseGet(() -> createDefaultPreference(userId));
+                .orElseGet(
+                        () -> createDefaultPreference(userId)
+                );
     }
 
     /**
-     * Creates default notification preferences for a user.
+     * Creates default notification preferences.
      */
     private NotificationPreference createDefaultPreference(
             UUID userId
@@ -146,6 +221,8 @@ public class NotificationPreferenceService {
         preference.setReminderMinutes(
                 DEFAULT_REMINDER_MINUTES
         );
+
+        preference.setQuietHoursEnabled(false);
 
         return notificationPreferenceRepository.save(
                 preference

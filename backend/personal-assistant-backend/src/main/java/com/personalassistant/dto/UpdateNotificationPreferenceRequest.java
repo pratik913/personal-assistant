@@ -3,6 +3,8 @@ package com.personalassistant.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import java.time.LocalTime;
+
 public record UpdateNotificationPreferenceRequest(
 
         Boolean taskStartNotificationsEnabled,
@@ -15,7 +17,13 @@ public record UpdateNotificationPreferenceRequest(
                 value = 1440,
                 message = "Reminder minutes must not exceed 1440."
         )
-        Integer reminderMinutes
+        Integer reminderMinutes,
+
+        Boolean quietHoursEnabled,
+
+        LocalTime quietHoursStart,
+
+        LocalTime quietHoursEnd
 
 ) {
 }

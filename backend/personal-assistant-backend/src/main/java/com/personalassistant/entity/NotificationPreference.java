@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Getter
@@ -44,6 +45,22 @@ public class NotificationPreference {
             nullable = false
     )
     private Integer reminderMinutes = 15;
+
+    @Column(
+            name = "quiet_hours_enabled",
+            nullable = false
+    )
+    private boolean quietHoursEnabled = false;
+
+    @Column(
+            name = "quiet_hours_start"
+    )
+    private LocalTime quietHoursStart;
+
+    @Column(
+            name = "quiet_hours_end"
+    )
+    private LocalTime quietHoursEnd;
 
     @Column(
             name = "created_at",

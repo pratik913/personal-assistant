@@ -4,10 +4,11 @@ import com.personalassistant.dto.NotificationPreferenceResponse;
 import com.personalassistant.dto.UpdateNotificationPreferenceRequest;
 import com.personalassistant.service.NotificationPreferenceService;
 import jakarta.validation.Valid;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/notification-preferences")
@@ -24,9 +25,6 @@ public class NotificationPreferenceController {
                 notificationPreferenceService;
     }
 
-    /**
-     * Returns the authenticated user's notification preferences.
-     */
     @GetMapping
     public NotificationPreferenceResponse getPreferences(
             Authentication authentication
@@ -41,10 +39,6 @@ public class NotificationPreferenceController {
                 .getPreferences(userId);
     }
 
-    /**
-     * Partially updates the authenticated user's
-     * notification preferences.
-     */
     @PatchMapping
     public NotificationPreferenceResponse updatePreferences(
             @Valid

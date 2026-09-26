@@ -1,6 +1,7 @@
 package com.personalassistant.service;
 
 import com.personalassistant.dto.AiPlanItem;
+import com.personalassistant.dto.NotificationDecision;
 import com.personalassistant.dto.NotificationResponse;
 import com.personalassistant.dto.UnreadNotificationCountResponse;
 import com.personalassistant.entity.Notification;
@@ -8,6 +9,7 @@ import com.personalassistant.entity.NotificationPreference;
 import com.personalassistant.entity.NotificationStatus;
 import com.personalassistant.entity.NotificationType;
 import com.personalassistant.entity.Task;
+import com.personalassistant.entity.TaskPriority;
 import com.personalassistant.entity.TaskStatus;
 import com.personalassistant.entity.User;
 import com.personalassistant.exception.TaskNotFoundException;
@@ -43,12 +45,16 @@ public class NotificationService {
 
     private final NotificationMapper notificationMapper;
 
+    private final NotificationPolicyService
+            notificationPolicyService;
+
     public NotificationService(
             NotificationRepository notificationRepository,
             NotificationPreferenceRepository notificationPreferenceRepository,
             UserRepository userRepository,
             TaskRepository taskRepository,
-            NotificationMapper notificationMapper
+            NotificationMapper notificationMapper,
+            NotificationPolicyService notificationPolicyService
     ) {
 
         this.notificationRepository =
@@ -65,23 +71,14 @@ public class NotificationService {
 
         this.notificationMapper =
                 notificationMapper;
+
+        this.notificationPolicyService =
+                notificationPolicyService;
     }
 
     /**
      * Synchronizes task-start notifications with
      * the latest AI-generated plan.
-     *
-     * Business rule:
-     *
-     * READ notifications are historical records
-     * and are preserved.
-     *
-     * A task can have at most ONE UNREAD
-     * TASK_STARTING notification.
-     *
-     * If the AI changes the task's scheduled time,
-     * the old unread notification is removed and
-     * a new notification is created.
      */
     public void createNotificationsForPlan(
             UUID userId,
@@ -158,53 +155,21 @@ public class NotificationService {
                         TaskStatus.COMPLETED
         ) {
 
-            notificationRepository
-                    .deleteByTaskIdAndUserIdAndStatusAndScheduledAtAfter(
-                            taskId,
-                            user.getId(),
-                            NotificationStatus.UNREAD,
-                            Instant.now()
-                    );
+            removeFutureUnreadNotifications(
+                    taskId,
+                    user.getId()
+            );
 
             return;
         }
 
-        /*
-         * Load the user's notification preference.
-         *
-         * Existing users may not have a preference row,
-         * so default behavior is used when none exists.
-         */
         NotificationPreference preference =
                 notificationPreferenceRepository
                         .findByUserId(user.getId())
                         .orElse(null);
 
         /*
-         * If notifications are disabled,
-         * remove future unread reminders for this task.
-         */
-        if (
-                preference != null &&
-                        !preference.isTaskStartNotificationsEnabled()
-        ) {
-
-            notificationRepository
-                    .deleteByTaskIdAndUserIdAndStatusAndScheduledAtAfter(
-                            taskId,
-                            user.getId(),
-                            NotificationStatus.UNREAD,
-                            Instant.now()
-                    );
-
-            return;
-        }
-
-        /*
          * Use the user's configured reminder duration.
-         *
-         * If no preference exists, preserve the
-         * original 15-minute behavior.
          */
         Duration reminderDuration =
                 preference != null
@@ -213,21 +178,47 @@ public class NotificationService {
                 )
                         : DEFAULT_TASK_START_REMINDER;
 
-        /*
-         * Notification should appear before
-         * the actual task start.
-         */
         Instant scheduledAt =
                 taskStartAt.minus(
                         reminderDuration
                 );
 
         /*
+         * Ask the notification policy whether
+         * this notification should exist.
+         */
+        NotificationDecision decision =
+                notificationPolicyService
+                        .evaluateTaskStartNotification(
+                                task,
+                                preference,
+                                scheduledAt
+                        );
+
+        /*
+         * Policy rejected the notification.
+         *
+         * Remove any future unread reminder for
+         * this task so an old notification doesn't
+         * remain active after preferences change.
+         */
+        if (
+                !decision.shouldNotify()
+        ) {
+
+            removeFutureUnreadNotifications(
+                    taskId,
+                    user.getId()
+            );
+
+            return;
+        }
+
+        /*
          * Get ALL unread TASK_STARTING
          * notifications for this task.
          *
-         * We deliberately do NOT filter by
-         * scheduledAt here.
+         * We deliberately do NOT filter by scheduledAt.
          */
         List<Notification> existingNotifications =
                 notificationRepository
@@ -245,10 +236,6 @@ public class NotificationService {
                 existingNotifications
         ) {
 
-            /*
-             * The latest plan uses the same
-             * reminder time.
-             */
             if (
                     notification.getScheduledAt()
                             .equals(scheduledAt)
@@ -262,27 +249,19 @@ public class NotificationService {
             /*
              * Same task but old reminder time.
              *
-             * Delete it because only one
-             * unread reminder is allowed.
+             * Only one active unread reminder
+             * is allowed.
              */
             notificationRepository.delete(
                     notification
             );
         }
 
-        /*
-         * Nothing more to do if the current
-         * unread notification already matches
-         * the latest plan.
-         */
         if (exactMatchExists) {
 
             return;
         }
 
-        /*
-         * Create the new notification.
-         */
         createTaskStartingNotification(
                 user,
                 task,
@@ -292,8 +271,8 @@ public class NotificationService {
     }
 
     /**
-     * Creates or synchronizes a task-start
-     * notification.
+     * Public API used when a task receives
+     * a scheduled start time directly.
      */
     public void createTaskStartingNotification(
             UUID userId,
@@ -318,7 +297,7 @@ public class NotificationService {
     }
 
     /**
-     * Internal notification creation method.
+     * Creates a task-start notification.
      */
     private void createTaskStartingNotification(
             User user,
@@ -327,9 +306,6 @@ public class NotificationService {
             long reminderMinutes
     ) {
 
-        /*
-         * Final exact duplicate protection.
-         */
         boolean alreadyExists =
                 notificationRepository
                         .existsByUserIdAndTaskIdAndTypeAndScheduledAt(
@@ -364,17 +340,14 @@ public class NotificationService {
         );
 
         notification.setTitle(
-                "Task starting soon"
+                buildNotificationTitle(task)
         );
 
         notification.setMessage(
-                "Your task \""
-                        + task.getTitle()
-                        + "\" starts in "
-                        + formatReminderDuration(
+                buildNotificationMessage(
+                        task,
                         reminderMinutes
                 )
-                        + "."
         );
 
         notification.setScheduledAt(
@@ -384,6 +357,69 @@ public class NotificationService {
         notificationRepository.save(
                 notification
         );
+    }
+
+    /**
+     * Creates a notification title based
+     * on task priority.
+     */
+    private String buildNotificationTitle(
+            Task task
+    ) {
+
+        if (
+                task.getPriority() ==
+                        TaskPriority.HIGH
+        ) {
+
+            return "High priority task starting soon";
+        }
+
+        return "Task starting soon";
+    }
+
+    /**
+     * Creates a priority-aware notification message.
+     */
+    private String buildNotificationMessage(
+            Task task,
+            long reminderMinutes
+    ) {
+
+        String duration =
+                formatReminderDuration(
+                        reminderMinutes
+                );
+
+        if (
+                task.getPriority() ==
+                        TaskPriority.HIGH
+        ) {
+
+            return "Your high priority task \""
+                    + task.getTitle()
+                    + "\" starts in "
+                    + duration
+                    + ".";
+        }
+
+        if (
+                task.getPriority() ==
+                        TaskPriority.MEDIUM
+        ) {
+
+            return "Your task \""
+                    + task.getTitle()
+                    + "\" starts in "
+                    + duration
+                    + ".";
+        }
+
+        return "Your task \""
+                + task.getTitle()
+                + "\" starts in "
+                + duration
+                + ".";
     }
 
     /**
@@ -412,14 +448,32 @@ public class NotificationService {
                     : hours + " hours";
         }
 
-        return hours + " hours "
+        return hours
+                + " hours "
                 + remainingMinutes
                 + " minutes";
     }
 
     /**
-     * Returns currently due unread
-     * notifications.
+     * Removes future unread notifications for
+     * a task.
+     */
+    private void removeFutureUnreadNotifications(
+            UUID taskId,
+            UUID userId
+    ) {
+
+        notificationRepository
+                .deleteByTaskIdAndUserIdAndStatusAndScheduledAtAfter(
+                        taskId,
+                        userId,
+                        NotificationStatus.UNREAD,
+                        Instant.now()
+                );
+    }
+
+    /**
+     * Returns currently due unread notifications.
      */
     @Transactional(readOnly = true)
     public List<NotificationResponse>
@@ -483,8 +537,6 @@ public class NotificationService {
 
     /**
      * Marks a notification as read.
-     *
-     * Ownership is verified using userId.
      */
     public NotificationResponse
     markAsRead(
@@ -532,13 +584,10 @@ public class NotificationService {
             UUID taskId
     ) {
 
-        notificationRepository
-                .deleteByTaskIdAndUserIdAndStatusAndScheduledAtAfter(
-                        taskId,
-                        userId,
-                        NotificationStatus.UNREAD,
-                        Instant.now()
-                );
+        removeFutureUnreadNotifications(
+                taskId,
+                userId
+        );
     }
 
     /**

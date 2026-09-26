@@ -13,7 +13,10 @@ public class NotificationPreferenceMapper {
 
         return new NotificationPreferenceResponse(
                 preference.isTaskStartNotificationsEnabled(),
-                preference.getReminderMinutes()
+                preference.getReminderMinutes(),
+                preference.isQuietHoursEnabled(),
+                preference.getQuietHoursStart(),
+                preference.getQuietHoursEnd()
         );
     }
 }

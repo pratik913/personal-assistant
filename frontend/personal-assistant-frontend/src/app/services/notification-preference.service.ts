@@ -5,11 +5,17 @@ import { Observable } from 'rxjs';
 export interface NotificationPreferenceResponse {
   taskStartNotificationsEnabled: boolean;
   reminderMinutes: number;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
 }
 
 export interface UpdateNotificationPreferenceRequest {
   taskStartNotificationsEnabled?: boolean;
   reminderMinutes?: number;
+  quietHoursEnabled?: boolean;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
 }
 
 @Injectable({
