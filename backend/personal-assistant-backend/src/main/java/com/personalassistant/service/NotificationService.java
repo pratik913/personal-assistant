@@ -4,6 +4,7 @@ import com.personalassistant.dto.AiPlanItem;
 import com.personalassistant.dto.NotificationResponse;
 import com.personalassistant.dto.UnreadNotificationCountResponse;
 import com.personalassistant.entity.Notification;
+import com.personalassistant.entity.NotificationPreference;
 import com.personalassistant.entity.NotificationStatus;
 import com.personalassistant.entity.NotificationType;
 import com.personalassistant.entity.Task;
@@ -12,6 +13,7 @@ import com.personalassistant.entity.User;
 import com.personalassistant.exception.TaskNotFoundException;
 import com.personalassistant.exception.UserNotFoundException;
 import com.personalassistant.mapper.NotificationMapper;
+import com.personalassistant.repository.NotificationPreferenceRepository;
 import com.personalassistant.repository.NotificationRepository;
 import com.personalassistant.repository.TaskRepository;
 import com.personalassistant.repository.UserRepository;
@@ -27,10 +29,13 @@ import java.util.UUID;
 @Transactional
 public class NotificationService {
 
-    private static final Duration TASK_START_REMINDER =
+    private static final Duration DEFAULT_TASK_START_REMINDER =
             Duration.ofMinutes(15);
 
     private final NotificationRepository notificationRepository;
+
+    private final NotificationPreferenceRepository
+            notificationPreferenceRepository;
 
     private final UserRepository userRepository;
 
@@ -40,6 +45,7 @@ public class NotificationService {
 
     public NotificationService(
             NotificationRepository notificationRepository,
+            NotificationPreferenceRepository notificationPreferenceRepository,
             UserRepository userRepository,
             TaskRepository taskRepository,
             NotificationMapper notificationMapper
@@ -47,6 +53,9 @@ public class NotificationService {
 
         this.notificationRepository =
                 notificationRepository;
+
+        this.notificationPreferenceRepository =
+                notificationPreferenceRepository;
 
         this.userRepository =
                 userRepository;
@@ -57,7 +66,6 @@ public class NotificationService {
         this.notificationMapper =
                 notificationMapper;
     }
-
 
     /**
      * Synchronizes task-start notifications with
@@ -89,7 +97,6 @@ public class NotificationService {
                                 )
                         );
 
-
         if (
                 planItems == null ||
                         planItems.isEmpty()
@@ -97,7 +104,6 @@ public class NotificationService {
 
             return;
         }
-
 
         for (
                 AiPlanItem item :
@@ -113,7 +119,6 @@ public class NotificationService {
                 continue;
             }
 
-
             synchronizeTaskNotification(
                     user,
                     item.taskId(),
@@ -122,25 +127,9 @@ public class NotificationService {
         }
     }
 
-
     /**
      * Synchronizes the active unread notification
      * for a single task.
-     *
-     * Rules:
-     *
-     * 1. Same task + same time:
-     *    keep existing notification.
-     *
-     * 2. Same task + different time:
-     *    delete old unread notification.
-     *    create new notification.
-     *
-     * 3. READ notifications:
-     *    never delete them.
-     *
-     * 4. COMPLETED task:
-     *    remove pending unread notifications.
      */
     private void synchronizeTaskNotification(
             User user,
@@ -159,7 +148,6 @@ public class NotificationService {
                                         "Task not found."
                                 )
                         );
-
 
         /*
          * Completed tasks should not have
@@ -181,16 +169,58 @@ public class NotificationService {
             return;
         }
 
+        /*
+         * Load the user's notification preference.
+         *
+         * Existing users may not have a preference row,
+         * so default behavior is used when none exists.
+         */
+        NotificationPreference preference =
+                notificationPreferenceRepository
+                        .findByUserId(user.getId())
+                        .orElse(null);
 
         /*
-         * Notification should appear 15 minutes
-         * before the actual task start.
+         * If notifications are disabled,
+         * remove future unread reminders for this task.
+         */
+        if (
+                preference != null &&
+                        !preference.isTaskStartNotificationsEnabled()
+        ) {
+
+            notificationRepository
+                    .deleteByTaskIdAndUserIdAndStatusAndScheduledAtAfter(
+                            taskId,
+                            user.getId(),
+                            NotificationStatus.UNREAD,
+                            Instant.now()
+                    );
+
+            return;
+        }
+
+        /*
+         * Use the user's configured reminder duration.
+         *
+         * If no preference exists, preserve the
+         * original 15-minute behavior.
+         */
+        Duration reminderDuration =
+                preference != null
+                        ? Duration.ofMinutes(
+                        preference.getReminderMinutes()
+                )
+                        : DEFAULT_TASK_START_REMINDER;
+
+        /*
+         * Notification should appear before
+         * the actual task start.
          */
         Instant scheduledAt =
                 taskStartAt.minus(
-                        TASK_START_REMINDER
+                        reminderDuration
                 );
-
 
         /*
          * Get ALL unread TASK_STARTING
@@ -208,9 +238,7 @@ public class NotificationService {
                                 NotificationStatus.UNREAD
                         );
 
-
         boolean exactMatchExists = false;
-
 
         for (
                 Notification notification :
@@ -231,7 +259,6 @@ public class NotificationService {
                 continue;
             }
 
-
             /*
              * Same task but old reminder time.
              *
@@ -243,7 +270,6 @@ public class NotificationService {
             );
         }
 
-
         /*
          * Nothing more to do if the current
          * unread notification already matches
@@ -254,17 +280,16 @@ public class NotificationService {
             return;
         }
 
-
         /*
          * Create the new notification.
          */
         createTaskStartingNotification(
                 user,
                 task,
-                scheduledAt
+                scheduledAt,
+                reminderDuration.toMinutes()
         );
     }
-
 
     /**
      * Creates or synchronizes a task-start
@@ -285,7 +310,6 @@ public class NotificationService {
                                 )
                         );
 
-
         synchronizeTaskNotification(
                 user,
                 taskId,
@@ -293,14 +317,14 @@ public class NotificationService {
         );
     }
 
-
     /**
      * Internal notification creation method.
      */
     private void createTaskStartingNotification(
             User user,
             Task task,
-            Instant scheduledAt
+            Instant scheduledAt,
+            long reminderMinutes
     ) {
 
         /*
@@ -315,59 +339,83 @@ public class NotificationService {
                                 scheduledAt
                         );
 
-
         if (alreadyExists) {
 
             return;
         }
 
-
         Notification notification =
                 new Notification();
-
 
         notification.setUser(
                 user
         );
 
-
         notification.setTask(
                 task
         );
-
 
         notification.setType(
                 NotificationType.TASK_STARTING
         );
 
-
         notification.setStatus(
                 NotificationStatus.UNREAD
         );
-
 
         notification.setTitle(
                 "Task starting soon"
         );
 
-
         notification.setMessage(
                 "Your task \""
                         + task.getTitle()
-                        + "\" starts in 15 minutes."
+                        + "\" starts in "
+                        + formatReminderDuration(
+                        reminderMinutes
+                )
+                        + "."
         );
-
 
         notification.setScheduledAt(
                 scheduledAt
         );
-
 
         notificationRepository.save(
                 notification
         );
     }
 
+    /**
+     * Formats reminder duration for
+     * human-readable notification text.
+     */
+    private String formatReminderDuration(
+            long reminderMinutes
+    ) {
+
+        if (reminderMinutes < 60) {
+
+            return reminderMinutes + " minutes";
+        }
+
+        long hours =
+                reminderMinutes / 60;
+
+        long remainingMinutes =
+                reminderMinutes % 60;
+
+        if (remainingMinutes == 0) {
+
+            return hours == 1
+                    ? "1 hour"
+                    : hours + " hours";
+        }
+
+        return hours + " hours "
+                + remainingMinutes
+                + " minutes";
+    }
 
     /**
      * Returns currently due unread
@@ -381,7 +429,6 @@ public class NotificationService {
 
         Instant now =
                 Instant.now();
-
 
         return notificationRepository
                 .findByUserIdAndStatusAndScheduledAtLessThanEqualOrderByScheduledAtDesc(
@@ -401,7 +448,6 @@ public class NotificationService {
                 .toList();
     }
 
-
     /**
      * Returns the number of currently
      * due unread notifications.
@@ -414,7 +460,6 @@ public class NotificationService {
 
         Instant now =
                 Instant.now();
-
 
         long count =
                 notificationRepository
@@ -431,12 +476,10 @@ public class NotificationService {
                         )
                         .count();
 
-
         return new UnreadNotificationCountResponse(
                 count
         );
     }
-
 
     /**
      * Marks a notification as read.
@@ -461,28 +504,23 @@ public class NotificationService {
                                 )
                         );
 
-
         notification.setStatus(
                 NotificationStatus.READ
         );
 
-
         notification.setReadAt(
                 Instant.now()
         );
-
 
         Notification saved =
                 notificationRepository.save(
                         notification
                 );
 
-
         return notificationMapper.toResponse(
                 saved
         );
     }
-
 
     /**
      * Removes future unread notifications
@@ -502,7 +540,6 @@ public class NotificationService {
                         Instant.now()
                 );
     }
-
 
     /**
      * Removes all notifications belonging
