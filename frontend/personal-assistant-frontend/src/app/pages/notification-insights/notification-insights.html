@@ -1,0 +1,345 @@
+<div class="insights-page">
+
+  <div class="page-header">
+
+    <div>
+      <h1>Notification Insights</h1>
+
+      <p>
+        Understand how your reminders influence your task execution.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="refresh-button"
+      (click)="loadInsights()"
+      [disabled]="loading()"
+    >
+      @if (loading()) {
+        Loading...
+      } @else {
+        Refresh
+      }
+    </button>
+
+  </div>
+
+
+  <!-- ========================= -->
+  <!-- LOADING -->
+  <!-- ========================= -->
+
+  @if (loading()) {
+
+    <div class="state-card">
+
+      <div class="loader"></div>
+
+      <p>
+        Analyzing your notification behavior...
+      </p>
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- ERROR -->
+  <!-- ========================= -->
+
+  @else if (error()) {
+
+    <div class="state-card error-card">
+
+      <div class="error-icon">
+        !
+      </div>
+
+      <h3>
+        Something went wrong
+      </h3>
+
+      <p>
+        {{ error() }}
+      </p>
+
+      <button
+        type="button"
+        class="retry-button"
+        (click)="loadInsights()"
+      >
+        Try Again
+      </button>
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- DATA -->
+  <!-- ========================= -->
+
+  @else if (insight(); as data) {
+
+    <div class="stats-grid">
+
+      <!-- Total -->
+
+      <div class="stat-card">
+
+        <span class="stat-label">
+          Total Reminders
+        </span>
+
+        <strong>
+          {{ data.totalReminders }}
+        </strong>
+
+        <span class="stat-description">
+          Task reminders created
+        </span>
+
+      </div>
+
+
+      <!-- Read -->
+
+      <div class="stat-card">
+
+        <span class="stat-label">
+          Read
+        </span>
+
+        <strong>
+          {{ data.readReminders }}
+        </strong>
+
+        <span class="stat-subtitle">
+          {{ data.readRate }}%
+        </span>
+
+        <span class="stat-description">
+          Reminders opened
+        </span>
+
+      </div>
+
+
+      <!-- Ignored -->
+
+      <div class="stat-card">
+
+        <span class="stat-label">
+          Ignored
+        </span>
+
+        <strong>
+          {{ data.ignoredReminders }}
+        </strong>
+
+        <span class="stat-description">
+          Reminders not opened
+        </span>
+
+      </div>
+
+
+      <!-- Acted -->
+
+      <div class="stat-card">
+
+        <span class="stat-label">
+          Acted On
+        </span>
+
+        <strong>
+          {{ data.actedOnReminders }}
+        </strong>
+
+        <span class="stat-subtitle">
+          {{ data.actionRate }}%
+        </span>
+
+        <span class="stat-description">
+          Followed by task execution
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- BEHAVIOR -->
+    <!-- ========================= -->
+
+    <div class="behavior-card">
+
+      <div class="card-header">
+
+        <div>
+
+          <span class="eyebrow">
+            Behavior Intelligence
+          </span>
+
+          <h2>
+            Reminder effectiveness
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <div class="behavior-content">
+
+        <!-- Read rate -->
+
+        <div class="metric">
+
+          <div class="metric-header">
+
+            <span>
+              Read rate
+            </span>
+
+            <strong>
+              {{ data.readRate }}%
+            </strong>
+
+          </div>
+
+          <div class="progress-track">
+
+            <div
+              class="progress-value"
+              [style.width.%]="data.readRate"
+            ></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Action rate -->
+
+        <div class="metric">
+
+          <div class="metric-header">
+
+            <span>
+              Action rate
+            </span>
+
+            <strong>
+              {{ data.actionRate }}%
+            </strong>
+
+          </div>
+
+          <div class="progress-track">
+
+            <div
+              class="progress-value"
+              [style.width.%]="data.actionRate"
+            ></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Average time -->
+
+        <div class="average-time">
+
+          <div>
+
+            <span>
+              Average time to start
+            </span>
+
+            <small>
+              Time between reminder and task execution
+            </small>
+
+          </div>
+
+          <strong>
+
+            @if (data.averageMinutesToStart > 0) {
+
+              {{ data.averageMinutesToStart | number:'1.0-1' }}
+              min
+
+            } @else {
+
+              —
+
+            }
+
+          </strong>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- INSIGHT -->
+    <!-- ========================= -->
+
+    <div class="insight-card">
+
+      <div class="insight-icon">
+        ✨
+      </div>
+
+      <div class="insight-content">
+
+        <span class="eyebrow">
+          MindMate Insight
+        </span>
+
+        <p>
+          {{ data.insight }}
+        </p>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ========================= -->
+  <!-- EMPTY -->
+  <!-- ========================= -->
+
+  @else {
+
+    <div class="state-card">
+
+      <p>
+        No notification insights available yet.
+      </p>
+
+      <button
+        type="button"
+        class="retry-button"
+        (click)="loadInsights()"
+      >
+        Load Insights
+      </button>
+
+    </div>
+
+  }
+
+</div>

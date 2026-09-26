@@ -10,11 +10,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface NotificationRepository
-        extends JpaRepository<Notification, UUID> {
+public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
-    List<Notification>
-    findByUserIdAndStatusAndScheduledAtLessThanEqualOrderByScheduledAtDesc(
+    List<Notification> findByUserIdAndStatusAndScheduledAtLessThanEqualOrderByScheduledAtDesc(
             UUID userId,
             NotificationStatus status,
             Instant scheduledAt
@@ -26,8 +24,7 @@ public interface NotificationRepository
             Instant scheduledAt
     );
 
-    Optional<Notification>
-    findByIdAndUserId(
+    Optional<Notification> findByIdAndUserId(
             UUID notificationId,
             UUID userId
     );
@@ -39,27 +36,22 @@ public interface NotificationRepository
             Instant scheduledAt
     );
 
-    List<Notification>
-    findByUserIdAndTypeAndStatusAndScheduledAtAfter(
+    List<Notification> findByUserIdAndTypeAndStatusAndScheduledAtAfter(
             UUID userId,
             NotificationType type,
             NotificationStatus status,
             Instant scheduledAt
     );
 
-    /*
-     * Returns ALL unread notifications for a
-     * specific task and notification type.
-     *
-     * Important:
-     * No scheduledAt filter here.
-     *
-     * This allows NotificationService to detect
-     * an old reminder even when the AI has changed
-     * the task's scheduled time.
-     */
-    List<Notification>
-    findByTaskIdAndUserIdAndTypeAndStatus(
+    List<Notification> findByTaskIdAndUserIdAndTypeAndStatusAndScheduledAtAfter(
+            UUID taskId,
+            UUID userId,
+            NotificationType type,
+            NotificationStatus status,
+            Instant scheduledAt
+    );
+
+    List<Notification> findByTaskIdAndUserIdAndTypeAndStatus(
             UUID taskId,
             UUID userId,
             NotificationType type,
@@ -76,5 +68,15 @@ public interface NotificationRepository
             UUID userId,
             NotificationStatus status,
             Instant scheduledAt
+    );
+
+    /*
+     * Day 24
+     *
+     * Used for notification behavior analysis.
+     */
+    List<Notification> findByUserIdAndTypeOrderByScheduledAtDesc(
+            UUID userId,
+            NotificationType type
     );
 }

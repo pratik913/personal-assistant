@@ -17,6 +17,7 @@ import { Planner } from './pages/planner/planner';
 import { Goals } from './pages/goals/goals';
 import { Settings } from './pages/settings/settings';
 import { GoalDetails } from './pages/goal-details/goal-details';
+import { NotificationInsightsComponent } from './pages/notification-insights/notification-insights';
 
 export const routes: Routes = [
 
@@ -79,6 +80,10 @@ export const routes: Routes = [
       {
   path: 'goals/:id',
   component: GoalDetails
+},
+{
+  path: 'notification-insights',
+  component: NotificationInsightsComponent
 }
     ]
   },

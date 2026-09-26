@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface TaskExecutionRepository
-        extends JpaRepository<TaskExecution, UUID> {
+public interface TaskExecutionRepository extends JpaRepository<TaskExecution, UUID> {
 
     List<TaskExecution> findByTaskIdAndUserIdOrderByStartedAtDesc(
             UUID taskId,
@@ -32,5 +31,15 @@ public interface TaskExecutionRepository
             UUID taskId,
             UUID userId,
             TaskExecutionStatus status
+    );
+
+    /*
+     * Day 24
+     *
+     * Used to correlate notification reminders
+     * with actual user execution behavior.
+     */
+    List<TaskExecution> findByUserIdOrderByStartedAtDesc(
+            UUID userId
     );
 }
