@@ -20,6 +20,7 @@ import {
 } from '@angular/router';
 
 import {
+  TaskPlanningInsightResponse,
   TaskResponse,
   TaskService,
   UpdateTaskRequest
@@ -55,10 +56,20 @@ export class TaskDetails {
 
   task: TaskResponse | null = null;
 
+  planningInsight:
+    TaskPlanningInsightResponse | null = null;
+
   isLoading = true;
+  isPlanningInsightLoading = false;
+  isApplyingRecommendation = false;
+
   isEditing = false;
   isSaving = false;
   isDeleting = false;
+
+  planningInsightError = '';
+  planningApplyError = '';
+  planningApplySuccess = '';
 
   errorMessage = '';
 
@@ -142,6 +153,8 @@ export class TaskDetails {
 
           this.populateForm(task);
 
+          this.loadPlanningInsight(task.id);
+
           this.changeDetectorRef.detectChanges();
         },
 
@@ -168,6 +181,142 @@ export class TaskDetails {
 
             this.errorMessage =
               'Unable to load this task.';
+          }
+
+          this.changeDetectorRef.detectChanges();
+        }
+      });
+  }
+
+  private loadPlanningInsight(
+    taskId: string
+  ): void {
+
+    this.isPlanningInsightLoading = true;
+    this.planningInsightError = '';
+    this.planningApplyError = '';
+    this.planningApplySuccess = '';
+    this.planningInsight = null;
+
+    this.taskService
+      .getPlanningInsight(taskId)
+      .subscribe({
+
+        next: (insight) => {
+
+          this.planningInsight = insight;
+          this.isPlanningInsightLoading = false;
+
+          this.changeDetectorRef.detectChanges();
+        },
+
+        error: (error) => {
+
+          console.error(
+            'Failed to load planning insight:',
+            error
+          );
+
+          this.isPlanningInsightLoading = false;
+
+          if (error.status === 401) {
+
+            this.planningInsightError =
+              'Your session has expired. Please log in again.';
+
+          } else if (error.status === 404) {
+
+            this.planningInsightError =
+              'Planning insight is not available for this task.';
+
+          } else {
+
+            this.planningInsightError =
+              'Unable to load planning intelligence.';
+          }
+
+          this.changeDetectorRef.detectChanges();
+        }
+      });
+  }
+
+  applyPlanningRecommendation(): void {
+
+    if (
+      !this.task ||
+      !this.planningInsight ||
+      this.planningInsight.recommendedMinutes === null ||
+      this.isApplyingRecommendation
+    ) {
+      return;
+    }
+
+    const recommendedMinutes =
+      this.planningInsight.recommendedMinutes;
+
+    this.isApplyingRecommendation = true;
+
+    this.planningApplyError = '';
+    this.planningApplySuccess = '';
+
+    const request: UpdateTaskRequest = {
+      estimatedMinutes: recommendedMinutes
+    };
+
+    this.taskService
+      .updateTask(
+        this.task.id,
+        request
+      )
+      .subscribe({
+
+        next: (updatedTask) => {
+
+          this.task = updatedTask;
+
+          this.populateForm(updatedTask);
+
+          this.isApplyingRecommendation = false;
+
+          this.planningApplySuccess =
+            `Task estimate updated to ${recommendedMinutes} minutes.`;
+
+          this.loadPlanningInsight(
+            updatedTask.id
+          );
+
+          this.changeDetectorRef.detectChanges();
+        },
+
+        error: (error) => {
+
+          console.error(
+            'Failed to apply planning recommendation:',
+            error
+          );
+
+          this.isApplyingRecommendation = false;
+
+          if (error.status === 400) {
+
+            this.planningApplyError =
+              error.error?.message ??
+              'The recommended duration is invalid.';
+
+          } else if (error.status === 404) {
+
+            this.planningApplyError =
+              'Task not found or you do not have access to it.';
+
+          } else if (error.status === 401) {
+
+            this.planningApplyError =
+              'Your session has expired. Please log in again.';
+
+          } else {
+
+            this.planningApplyError =
+              'Unable to apply the recommendation.';
           }
 
           this.changeDetectorRef.detectChanges();
@@ -282,6 +431,10 @@ export class TaskDetails {
 
           this.saveSuccess =
             'Task updated successfully.';
+
+          this.loadPlanningInsight(
+            updatedTask.id
+          );
 
           this.changeDetectorRef.detectChanges();
         },
@@ -408,4 +561,80 @@ export class TaskDetails {
       .toLowerCase()
       .replace('_', '-');
   }
-} 
+
+  getPlanningConfidenceClass(): string {
+
+    if (!this.planningInsight) {
+      return '';
+    }
+
+    return this.planningInsight.confidence.toLowerCase();
+  }
+
+  getPlanningConfidenceLabel(): string {
+
+    if (!this.planningInsight) {
+      return '';
+    }
+
+    switch (this.planningInsight.confidence) {
+
+      case 'HIGH':
+        return 'High confidence';
+
+      case 'MEDIUM':
+        return 'Medium confidence';
+
+      case 'LOW':
+        return 'Low confidence';
+
+      case 'NONE':
+        return 'No history';
+
+      default:
+        return this.planningInsight.confidence;
+    }
+  }
+
+  formatPlanningMinutes(
+    minutes: number | null
+  ): string {
+
+    if (
+      minutes === null ||
+      minutes <= 0
+    ) {
+      return '—';
+    }
+
+    if (minutes < 60) {
+
+      return `${this.formatNumber(minutes)} min`;
+    }
+
+    const hours =
+      Math.floor(minutes / 60);
+
+    const remainingMinutes =
+      Math.round(minutes % 60);
+
+    if (remainingMinutes === 0) {
+      return `${hours} hr`;
+    }
+
+    return `${hours} hr ${remainingMinutes} min`;
+  }
+
+  private formatNumber(
+    value: number
+  ): string {
+
+    if (Number.isInteger(value)) {
+      return value.toString();
+    }
+
+    return value
+      .toFixed(1)
+      .replace(/\.0$/, '');
+  }
+}

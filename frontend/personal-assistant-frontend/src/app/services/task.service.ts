@@ -36,6 +36,23 @@ export type ExecutionBlocker =
   'EXTERNAL_DEPENDENCY' |
   'OTHER';
 
+export type PlanningConfidence =
+  'NONE' |
+  'LOW' |
+  'MEDIUM' |
+  'HIGH';
+
+export interface TaskPlanningInsightResponse {
+  taskId: string;
+  estimatedMinutes: number | null;
+  averageActualMinutes: number | null;
+  executionCount: number;
+  planningExecutionCount: number;
+  excludedExecutionCount: number;
+  recommendedMinutes: number | null;
+  confidence: PlanningConfidence;
+}
+
 export interface TaskResponse {
   id: string;
   title: string;
@@ -106,12 +123,18 @@ export interface ExecutionAnalysisResponse {
 })
 export class TaskService {
 
-  private readonly http = inject(HttpClient);
+  private readonly http =
+    inject(HttpClient);
 
   private readonly baseUrl =
     'http://localhost:8080/api/tasks';
 
+  /* =======================================================
+     TASK APIs
+     ======================================================= */
+
   getTasks(): Observable<TaskResponse[]> {
+
     return this.http.get<TaskResponse[]>(
       this.baseUrl
     );
@@ -120,6 +143,7 @@ export class TaskService {
   getTask(
     id: string
   ): Observable<TaskResponse> {
+
     return this.http.get<TaskResponse>(
       `${this.baseUrl}/${id}`
     );
@@ -128,6 +152,7 @@ export class TaskService {
   createTask(
     request: CreateTaskRequest
   ): Observable<TaskResponse> {
+
     return this.http.post<TaskResponse>(
       this.baseUrl,
       request
@@ -138,6 +163,7 @@ export class TaskService {
     id: string,
     request: UpdateTaskRequest
   ): Observable<TaskResponse> {
+
     return this.http.patch<TaskResponse>(
       `${this.baseUrl}/${id}`,
       request
@@ -147,6 +173,7 @@ export class TaskService {
   deleteTask(
     id: string
   ): Observable<void> {
+
     return this.http.delete<void>(
       `${this.baseUrl}/${id}`
     );
@@ -155,10 +182,15 @@ export class TaskService {
   removeTaskFromGoal(
     taskId: string
   ): Observable<void> {
+
     return this.http.delete<void>(
       `${this.baseUrl}/${taskId}/goal`
     );
   }
+
+  /* =======================================================
+     TASK EXECUTION APIs
+     ======================================================= */
 
   startTaskExecution(
     taskId: string,
@@ -192,6 +224,10 @@ export class TaskService {
     );
   }
 
+  /* =======================================================
+     EXECUTION ANALYSIS APIs
+     ======================================================= */
+
   getExecutionAnalysis(
     taskId: string,
     executionId: string
@@ -210,6 +246,19 @@ export class TaskService {
     return this.http.post<ExecutionAnalysisResponse>(
       `${this.baseUrl}/${taskId}/executions/${executionId}/analysis`,
       {}
+    );
+  }
+
+  /* =======================================================
+     PLANNING INTELLIGENCE APIs
+     ======================================================= */
+
+  getPlanningInsight(
+    taskId: string
+  ): Observable<TaskPlanningInsightResponse> {
+
+    return this.http.get<TaskPlanningInsightResponse>(
+      `${this.baseUrl}/${taskId}/planning-insight`
     );
   }
 }

@@ -157,10 +157,6 @@
 
         <div class="form-content">
 
-          <!-- =========================
-               TITLE
-               ========================= -->
-
           <div class="form-group">
 
             <label for="title">
@@ -175,7 +171,6 @@
               autocomplete="off"
             />
 
-
             @if (
               taskForm.controls.title.touched &&
               taskForm.controls.title.hasError('required')
@@ -186,7 +181,6 @@
               </span>
 
             }
-
 
             @if (
               taskForm.controls.title.touched &&
@@ -202,10 +196,6 @@
           </div>
 
 
-          <!-- =========================
-               DESCRIPTION
-               ========================= -->
-
           <div class="form-group">
 
             <label for="description">
@@ -218,7 +208,6 @@
               formControlName="description"
               placeholder="Describe what needs to be done..."
             ></textarea>
-
 
             @if (
               taskForm.controls.description.touched &&
@@ -234,13 +223,7 @@
           </div>
 
 
-          <!-- =========================
-               FORM GRID
-               ========================= -->
-
           <div class="form-grid">
-
-            <!-- PRIORITY -->
 
             <div class="form-group">
 
@@ -270,8 +253,6 @@
             </div>
 
 
-            <!-- DUE DATE -->
-
             <div class="form-group">
 
               <label for="dueDate">
@@ -286,8 +267,6 @@
 
             </div>
 
-
-            <!-- ESTIMATED TIME -->
 
             <div class="form-group">
 
@@ -311,7 +290,6 @@
 
               </div>
 
-
               @if (
                 taskForm.controls.estimatedMinutes.touched &&
                 taskForm.controls.estimatedMinutes.hasError('min')
@@ -330,10 +308,6 @@
         </div>
 
 
-        <!-- =========================
-             SAVE ERROR
-             ========================= -->
-
         @if (saveError) {
 
           <div class="error-message">
@@ -342,10 +316,6 @@
 
         }
 
-
-        <!-- =========================
-             FORM ACTIONS
-             ========================= -->
 
         <div class="form-actions">
 
@@ -389,10 +359,6 @@
            ========================= -->
 
       <div class="task-layout">
-
-        <!-- =========================
-             MAIN TASK CARD
-             ========================= -->
 
         <article class="task-card main-card">
 
@@ -455,10 +421,6 @@
         </article>
 
 
-        <!-- =========================
-             METADATA CARD
-             ========================= -->
-
         <aside class="task-card metadata-card">
 
           <div class="card-header">
@@ -480,8 +442,6 @@
 
           <div class="metadata-list">
 
-            <!-- STATUS -->
-
             <div class="metadata-item">
 
               <span class="metadata-label">
@@ -495,8 +455,6 @@
             </div>
 
 
-            <!-- PRIORITY -->
-
             <div class="metadata-item">
 
               <span class="metadata-label">
@@ -509,8 +467,6 @@
 
             </div>
 
-
-            <!-- DUE DATE -->
 
             <div class="metadata-item">
 
@@ -535,8 +491,6 @@
             </div>
 
 
-            <!-- ESTIMATED TIME -->
-
             <div class="metadata-item">
 
               <span class="metadata-label">
@@ -560,8 +514,6 @@
             </div>
 
 
-            <!-- CREATED -->
-
             <div class="metadata-item">
 
               <span class="metadata-label">
@@ -574,8 +526,6 @@
 
             </div>
 
-
-            <!-- LAST UPDATED -->
 
             <div class="metadata-item">
 
@@ -597,7 +547,349 @@
 
 
       <!-- =================================================
-           TASK EXECUTION COMPONENT
+           PLANNING INTELLIGENCE
+           ================================================= -->
+
+      <section class="planning-card task-card">
+
+        <div class="planning-header">
+
+          <div class="planning-title">
+
+            <div class="planning-icon">
+              ✦
+            </div>
+
+            <div>
+
+              <span class="eyebrow">
+                Adaptive Planning
+              </span>
+
+              <h2>
+                Planning Intelligence
+              </h2>
+
+              <p>
+                MindMate learns how long this task actually
+                takes you.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          @if (
+            planningInsight &&
+            planningInsight.confidence !== 'NONE'
+          ) {
+
+            <span
+              class="confidence-badge"
+              [class]="getPlanningConfidenceClass()"
+            >
+              {{ getPlanningConfidenceLabel() }}
+            </span>
+
+          }
+
+        </div>
+
+
+        @if (isPlanningInsightLoading) {
+
+          <div class="planning-loading">
+
+            <div class="planning-spinner"></div>
+
+            <span>
+              Analyzing your execution history...
+            </span>
+
+          </div>
+
+        } @else if (planningInsightError) {
+
+          <div class="planning-error">
+
+            <span class="planning-error-icon">
+              !
+            </span>
+
+            <div>
+
+              <strong>
+                Planning intelligence unavailable
+              </strong>
+
+              <p>
+                {{ planningInsightError }}
+              </p>
+
+            </div>
+
+          </div>
+
+        } @else if (planningInsight) {
+
+          <div class="planning-metrics">
+
+            <div class="planning-metric">
+
+              <span class="planning-metric-label">
+                Current Estimate
+              </span>
+
+              <strong class="planning-metric-value">
+                {{ formatPlanningMinutes(
+                  planningInsight.estimatedMinutes
+                ) }}
+              </strong>
+
+              <span class="planning-metric-description">
+                Your current task estimate
+              </span>
+
+            </div>
+
+
+            <div class="planning-metric">
+
+              <span class="planning-metric-label">
+                Historical Average
+              </span>
+
+              <strong class="planning-metric-value">
+                {{ formatPlanningMinutes(
+                  planningInsight.averageActualMinutes
+                ) }}
+              </strong>
+
+              <span class="planning-metric-description">
+                Average eligible session
+              </span>
+
+            </div>
+
+
+            <div class="planning-metric recommended">
+
+              <span class="planning-metric-label">
+                Recommended
+              </span>
+
+              <strong class="planning-metric-value">
+                {{ formatPlanningMinutes(
+                  planningInsight.recommendedMinutes
+                ) }}
+              </strong>
+
+              <span class="planning-metric-description">
+                Adaptive planning duration
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="planning-summary">
+
+            <div class="planning-summary-item">
+
+              <span class="summary-dot"></span>
+
+              <span>
+                {{ planningInsight.executionCount }}
+                completed
+                {{
+                  planningInsight.executionCount === 1
+                    ? 'session'
+                    : 'sessions'
+                }}
+              </span>
+
+            </div>
+
+
+            <div class="planning-summary-item">
+
+              <span class="summary-dot accent"></span>
+
+              <span>
+                {{ planningInsight.planningExecutionCount }}
+                used for planning
+              </span>
+
+            </div>
+
+
+            @if (
+              planningInsight.excludedExecutionCount > 0
+            ) {
+
+              <div class="planning-summary-item warning">
+
+                <span class="summary-dot warning"></span>
+
+                <span>
+                  {{ planningInsight.excludedExecutionCount }}
+                  {{
+                    planningInsight.excludedExecutionCount === 1
+                      ? 'session'
+                      : 'sessions'
+                  }}
+                  excluded as unusually long
+                </span>
+
+              </div>
+
+            }
+
+          </div>
+
+
+          @if (
+            planningApplySuccess
+          ) {
+
+            <div class="planning-success">
+
+              <span>
+                ✓
+              </span>
+
+              {{ planningApplySuccess }}
+
+            </div>
+
+          }
+
+
+          @if (
+            planningApplyError
+          ) {
+
+            <div class="planning-apply-error">
+
+              {{ planningApplyError }}
+
+            </div>
+
+          }
+
+
+          @if (
+            planningInsight.confidence !== 'NONE' &&
+            planningInsight.recommendedMinutes !== null &&
+            planningInsight.recommendedMinutes !==
+              planningInsight.estimatedMinutes
+          ) {
+
+            <div class="planning-action">
+
+              <div>
+
+                <strong>
+                  Adjust your estimate?
+                </strong>
+
+                <p>
+                  Use the recommended
+                  {{
+                    formatPlanningMinutes(
+                      planningInsight.recommendedMinutes
+                    )
+                  }}
+                  for future planning.
+                </p>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="primary-button planning-action-button"
+                (click)="applyPlanningRecommendation()"
+                [disabled]="isApplyingRecommendation"
+              >
+
+                @if (isApplyingRecommendation) {
+
+                  Applying...
+
+                } @else {
+
+                  Use Recommendation
+
+                }
+
+              </button>
+
+            </div>
+
+          }
+
+
+          @if (
+            planningInsight.confidence === 'NONE'
+          ) {
+
+            <div class="planning-empty">
+
+              <div class="planning-empty-icon">
+                ✦
+              </div>
+
+              <div>
+
+                <strong>
+                  Build your planning history
+                </strong>
+
+                <p>
+                  Complete execution sessions for this task
+                  and MindMate will gradually learn how long
+                  it actually takes you.
+                </p>
+
+              </div>
+
+            </div>
+
+          } @else {
+
+            <div class="planning-note">
+
+              <span>
+                ✦
+              </span>
+
+              <p>
+                This recommendation uses
+                {{ planningInsight.planningExecutionCount }}
+                eligible execution
+                {{
+                  planningInsight.planningExecutionCount === 1
+                    ? 'session'
+                    : 'sessions'
+                }}.
+                Confidence will increase as more sessions
+                are completed.
+              </p>
+
+            </div>
+
+          }
+
+        }
+
+      </section>
+
+
+      <!-- =================================================
+           TASK EXECUTION
            ================================================= -->
 
       <app-task-execution
@@ -631,23 +923,19 @@
         !
       </div>
 
-
       <span class="eyebrow">
         Delete Task
       </span>
 
-
       <h2>
         Delete this task?
       </h2>
-
 
       <p>
         This will permanently remove
         <strong>{{ task?.title }}</strong>.
         This action cannot be undone.
       </p>
-
 
       @if (deleteError) {
 
@@ -656,7 +944,6 @@
         </div>
 
       }
-
 
       <div class="delete-actions">
 

@@ -1,6 +1,7 @@
 package com.personalassistant.repository;
 
 import com.personalassistant.entity.TaskExecution;
+import com.personalassistant.entity.TaskExecutionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -15,6 +16,12 @@ public interface TaskExecutionRepository
             UUID userId
     );
 
+    List<TaskExecution> findByTaskIdAndUserIdAndStatusOrderByStartedAtDesc(
+            UUID taskId,
+            UUID userId,
+            TaskExecutionStatus status
+    );
+
     Optional<TaskExecution> findByIdAndTaskIdAndUserId(
             UUID executionId,
             UUID taskId,
@@ -24,6 +31,6 @@ public interface TaskExecutionRepository
     boolean existsByTaskIdAndUserIdAndStatus(
             UUID taskId,
             UUID userId,
-            com.personalassistant.entity.TaskExecutionStatus status
+            TaskExecutionStatus status
     );
 }
