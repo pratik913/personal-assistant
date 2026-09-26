@@ -1,23 +1,31 @@
 <div class="insights-page">
 
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
   <div class="page-header">
 
     <div>
-      <h1>Notification Insights</h1>
+
+      <h1>
+        Notification Insights
+      </h1>
 
       <p>
         Understand how your reminders influence your task execution.
       </p>
+
     </div>
 
     <button
       type="button"
       class="refresh-button"
-      (click)="loadInsights()"
-      [disabled]="loading()"
+      (click)="refresh()"
+      [disabled]="loading() || recommendationLoading()"
     >
-      @if (loading()) {
-        Loading...
+      @if (loading() || recommendationLoading()) {
+        Refreshing...
       } @else {
         Refresh
       }
@@ -26,9 +34,9 @@
   </div>
 
 
-  <!-- ========================= -->
-  <!-- LOADING -->
-  <!-- ========================= -->
+  <!-- =====================================================
+       INSIGHT LOADING
+  ====================================================== -->
 
   @if (loading()) {
 
@@ -44,10 +52,6 @@
 
   }
 
-
-  <!-- ========================= -->
-  <!-- ERROR -->
-  <!-- ========================= -->
 
   @else if (error()) {
 
@@ -78,15 +82,13 @@
   }
 
 
-  <!-- ========================= -->
-  <!-- DATA -->
-  <!-- ========================= -->
-
   @else if (insight(); as data) {
 
-    <div class="stats-grid">
+    <!-- =================================================
+         STATS
+    ================================================== -->
 
-      <!-- Total -->
+    <div class="stats-grid">
 
       <div class="stat-card">
 
@@ -104,8 +106,6 @@
 
       </div>
 
-
-      <!-- Read -->
 
       <div class="stat-card">
 
@@ -128,8 +128,6 @@
       </div>
 
 
-      <!-- Ignored -->
-
       <div class="stat-card">
 
         <span class="stat-label">
@@ -146,8 +144,6 @@
 
       </div>
 
-
-      <!-- Acted -->
 
       <div class="stat-card">
 
@@ -172,9 +168,9 @@
     </div>
 
 
-    <!-- ========================= -->
-    <!-- BEHAVIOR -->
-    <!-- ========================= -->
+    <!-- =================================================
+         BEHAVIOR
+    ================================================== -->
 
     <div class="behavior-card">
 
@@ -196,8 +192,6 @@
 
 
       <div class="behavior-content">
-
-        <!-- Read rate -->
 
         <div class="metric">
 
@@ -225,8 +219,6 @@
         </div>
 
 
-        <!-- Action rate -->
-
         <div class="metric">
 
           <div class="metric-header">
@@ -252,8 +244,6 @@
 
         </div>
 
-
-        <!-- Average time -->
 
         <div class="average-time">
 
@@ -291,9 +281,216 @@
     </div>
 
 
-    <!-- ========================= -->
-    <!-- INSIGHT -->
-    <!-- ========================= -->
+    <!-- =================================================
+         ADAPTIVE REMINDER
+    ================================================== -->
+
+    @if (recommendation(); as recommendationData) {
+
+      <div class="recommendation-card">
+
+        <div class="recommendation-header">
+
+          <div class="recommendation-icon">
+            🧠
+          </div>
+
+          <div>
+
+            <span class="eyebrow">
+              Adaptive Reminder Intelligence
+            </span>
+
+            <h2>
+              MindMate learned from your behavior
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div class="recommendation-grid">
+
+          <div class="recommendation-value">
+
+            <span>
+              Current reminder
+            </span>
+
+            <strong>
+              {{ recommendationData.currentReminderMinutes }}
+              <small>min</small>
+            </strong>
+
+          </div>
+
+
+          <div class="recommendation-arrow">
+            →
+          </div>
+
+
+          <div class="recommendation-value recommended">
+
+            <span>
+              Recommended
+            </span>
+
+            <strong>
+              {{ recommendationData.recommendedReminderMinutes }}
+              <small>min</small>
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="recommendation-meta">
+
+          <div class="confidence">
+
+            <span>
+              Confidence
+            </span>
+
+            <strong
+              [class.confidence-low]="
+                recommendationData.confidence === 'LOW'
+              "
+              [class.confidence-medium]="
+                recommendationData.confidence === 'MEDIUM'
+              "
+              [class.confidence-high]="
+                recommendationData.confidence === 'HIGH'
+              "
+            >
+              {{ recommendationData.confidence }}
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              Based on
+            </span>
+
+            <strong>
+              {{ recommendationData.executionCount }}
+              executions
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="recommendation-reason">
+
+          <span class="reason-label">
+            Why?
+          </span>
+
+          <p>
+            {{ recommendationData.reason }}
+          </p>
+
+        </div>
+
+
+        @if (
+          recommendationData.recommendedReminderMinutes !==
+          recommendationData.currentReminderMinutes
+        ) {
+
+          <button
+            type="button"
+            class="apply-button"
+            (click)="applyRecommendation()"
+            [disabled]="applying()"
+          >
+
+            @if (applying()) {
+              Applying...
+            } @else {
+              Apply Recommendation
+            }
+
+          </button>
+
+        } @else {
+
+          <div class="no-change">
+
+            ✓
+
+            Your current reminder timing already matches
+            the recommendation.
+
+          </div>
+
+        }
+
+
+        @if (successMessage()) {
+
+          <div class="success-message">
+
+            ✓
+
+            {{ successMessage() }}
+
+          </div>
+
+        }
+
+      </div>
+
+    }
+
+
+    @else if (recommendationLoading()) {
+
+      <div class="recommendation-card loading-recommendation">
+
+        <div class="loader"></div>
+
+        <p>
+          Learning your reminder preferences...
+        </p>
+
+      </div>
+
+    }
+
+
+    @else if (recommendationError()) {
+
+      <div class="recommendation-card error-recommendation">
+
+        <p>
+          {{ recommendationError() }}
+        </p>
+
+        <button
+          type="button"
+          class="retry-button"
+          (click)="loadRecommendation()"
+        >
+          Retry
+        </button>
+
+      </div>
+
+    }
+
+
+    <!-- =================================================
+         MINDMATE INSIGHT
+    ================================================== -->
 
     <div class="insight-card">
 
@@ -312,31 +509,6 @@
         </p>
 
       </div>
-
-    </div>
-
-  }
-
-
-  <!-- ========================= -->
-  <!-- EMPTY -->
-  <!-- ========================= -->
-
-  @else {
-
-    <div class="state-card">
-
-      <p>
-        No notification insights available yet.
-      </p>
-
-      <button
-        type="button"
-        class="retry-button"
-        (click)="loadInsights()"
-      >
-        Load Insights
-      </button>
 
     </div>
 

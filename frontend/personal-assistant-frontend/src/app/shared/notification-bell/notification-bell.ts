@@ -1,25 +1,28 @@
 import {
-  CommonModule
-} from '@angular/common';
+  Component,
+  DestroyRef,
+  afterNextRender,
+  inject,
+  signal
+} from '@angular/core';
 
 import {
-  Component,
-  OnDestroy,
-  OnInit,
-  inject
-} from '@angular/core';
+  CommonModule
+} from '@angular/common';
 
 import {
   Router
 } from '@angular/router';
 
 import {
-  Subject,
   interval,
   startWith,
-  switchMap,
-  takeUntil
+  switchMap
 } from 'rxjs';
+
+import {
+  takeUntilDestroyed
+} from '@angular/core/rxjs-interop';
 
 import {
   NotificationResponse,
@@ -30,6 +33,8 @@ import {
 @Component({
   selector: 'app-notification-bell',
 
+  standalone: true,
+
   imports: [
     CommonModule
   ],
@@ -38,37 +43,74 @@ import {
 
   styleUrl: './notification-bell.scss'
 })
-export class NotificationBell
-  implements OnInit, OnDestroy {
-
+export class NotificationBell {
 
   private readonly notificationService =
     inject(NotificationService);
 
-
   private readonly router =
     inject(Router);
 
-
-  private readonly destroy$ =
-    new Subject<void>();
-
-
-  notifications:
-    NotificationResponse[] = [];
+  private readonly destroyRef =
+    inject(DestroyRef);
 
 
-  unreadCount = 0;
+  /*
+   * =====================================================
+   * STATE
+   * =====================================================
+   */
+
+  readonly notifications =
+    signal<NotificationResponse[]>([]);
+
+  readonly unreadCount =
+    signal(0);
+
+  readonly isOpen =
+    signal(false);
 
 
-  isOpen = false;
+  /*
+   * =====================================================
+   * INITIALIZATION
+   * =====================================================
+   */
+
+  constructor() {
+
+    /*
+     * Start notification polling after the
+     * initial Angular render.
+     *
+     * This prevents NG0100 caused by the
+     * notification state changing during
+     * the first change-detection cycle.
+     */
+    afterNextRender(() => {
+
+      this.startNotificationPolling();
+
+    });
+
+  }
 
 
-  ngOnInit(): void {
+  /*
+   * =====================================================
+   * NOTIFICATION POLLING
+   * =====================================================
+   */
+
+  private startNotificationPolling(): void {
 
     interval(30_000)
       .pipe(
 
+        /*
+         * Load immediately once,
+         * then every 30 seconds.
+         */
         startWith(0),
 
         switchMap(() =>
@@ -76,8 +118,12 @@ export class NotificationBell
             .getUnreadNotifications()
         ),
 
-        takeUntil(
-          this.destroy$
+        /*
+         * Automatically unsubscribe when
+         * NotificationBell is destroyed.
+         */
+        takeUntilDestroyed(
+          this.destroyRef
         )
 
       )
@@ -87,11 +133,13 @@ export class NotificationBell
           notifications
         ) => {
 
-          this.notifications =
-            notifications;
+          this.notifications.set(
+            notifications
+          );
 
-          this.unreadCount =
-            notifications.length;
+          this.unreadCount.set(
+            notifications.length
+          );
 
         },
 
@@ -111,20 +159,33 @@ export class NotificationBell
   }
 
 
+  /*
+   * =====================================================
+   * DROPDOWN
+   * =====================================================
+   */
+
   toggle(): void {
 
-    this.isOpen =
-      !this.isOpen;
+    this.isOpen.update(
+      isOpen => !isOpen
+    );
 
   }
 
 
   close(): void {
 
-    this.isOpen = false;
+    this.isOpen.set(false);
 
   }
 
+
+  /*
+   * =====================================================
+   * OPEN NOTIFICATION
+   * =====================================================
+   */
 
   openNotification(
     notification: NotificationResponse
@@ -134,25 +195,33 @@ export class NotificationBell
       .markAsRead(
         notification.id
       )
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef
+        )
+      )
       .subscribe({
 
         next: () => {
 
-          this.notifications =
-            this.notifications.filter(
-              current =>
-                current.id !==
-                notification.id
-            );
+          this.notifications.update(
+            notifications =>
+              notifications.filter(
+                current =>
+                  current.id !==
+                  notification.id
+              )
+          );
 
+          this.unreadCount.update(
+            count =>
+              Math.max(
+                0,
+                count - 1
+              )
+          );
 
-          this.unreadCount =
-            this.notifications.length;
-
-
-          this.isOpen =
-            false;
-
+          this.isOpen.set(false);
 
           this.router.navigate([
             '/tasks',
@@ -170,10 +239,11 @@ export class NotificationBell
             error
           );
 
-
-          this.isOpen =
-            false;
-
+          /*
+           * Preserve your existing behavior:
+           * navigate even if marking as read fails.
+           */
+          this.isOpen.set(false);
 
           this.router.navigate([
             '/tasks',
@@ -187,13 +257,18 @@ export class NotificationBell
   }
 
 
+  /*
+   * =====================================================
+   * TIME FORMATTER
+   * =====================================================
+   */
+
   formatNotificationTime(
     value: string
   ): string {
 
     const date =
       new Date(value);
-
 
     if (
       Number.isNaN(
@@ -205,7 +280,6 @@ export class NotificationBell
 
     }
 
-
     return new Intl.DateTimeFormat(
       undefined,
       {
@@ -213,15 +287,6 @@ export class NotificationBell
         minute: '2-digit'
       }
     ).format(date);
-
-  }
-
-
-  ngOnDestroy(): void {
-
-    this.destroy$.next();
-
-    this.destroy$.complete();
 
   }
 

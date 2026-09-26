@@ -1,33 +1,52 @@
 <div class="notification-container">
 
-
-  <!-- ===================================================== -->
-  <!-- BELL -->
-  <!-- ===================================================== -->
+  <!-- =====================================================
+       NOTIFICATION BUTTON
+       ===================================================== -->
 
   <button
     type="button"
     class="notification-button"
     aria-label="Notifications"
-    [attr.aria-expanded]="isOpen"
+    [attr.aria-expanded]="isOpen()"
+    aria-haspopup="true"
     (click)="toggle()"
   >
 
-    <span class="bell-icon">
-      ♧
-    </span>
+    <svg
+      class="bell-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M18 8A6 6 0 0 0 6 8c0 7-3 7-3 9h18c0-2-3-2-3-9"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <path
+        d="M10 21h4"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+    </svg>
 
 
-    @if (unreadCount > 0) {
+    @if (unreadCount() > 0) {
 
-      <span class="notification-badge">
-
+      <span
+        class="notification-badge"
+        aria-hidden="true"
+      >
         {{
-          unreadCount > 9
+          unreadCount() > 9
             ? '9+'
-            : unreadCount
+            : unreadCount()
         }}
-
       </span>
 
     }
@@ -35,19 +54,23 @@
   </button>
 
 
+  <!-- =====================================================
+       NOTIFICATION DROPDOWN
+       ===================================================== -->
 
-  <!-- ===================================================== -->
-  <!-- DROPDOWN -->
-  <!-- ===================================================== -->
+  @if (isOpen()) {
 
-  @if (isOpen) {
+    <div
+      class="notification-panel"
+      role="dialog"
+      aria-label="Notifications"
+    >
 
-    <div class="notification-panel">
-
+      <!-- HEADER -->
 
       <header class="notification-header">
 
-        <div>
+        <div class="notification-heading">
 
           <span class="eyebrow">
             MindMate
@@ -60,11 +83,17 @@
         </div>
 
 
-        @if (unreadCount > 0) {
+        @if (unreadCount() > 0) {
 
           <span class="notification-count">
 
-            {{ unreadCount }} new
+            {{ unreadCount() }}
+
+            {{
+              unreadCount() === 1
+                ? 'new'
+                : 'new'
+            }}
 
           </span>
 
@@ -73,18 +102,35 @@
       </header>
 
 
+      <!-- EMPTY STATE -->
 
-      @if (notifications.length === 0) {
+      @if (notifications().length === 0) {
 
         <div class="notification-empty">
 
           <div class="empty-icon">
-            ✓
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="m5 12 4 4L19 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
           </div>
+
 
           <strong>
             You're all caught up
           </strong>
+
 
           <p>
             No upcoming task reminders right now.
@@ -95,25 +141,49 @@
       }
 
 
-      @if (notifications.length > 0) {
+      <!-- NOTIFICATION LIST -->
+
+      @if (notifications().length > 0) {
 
         <div class="notification-list">
 
           @for (
-            notification of notifications;
+            notification of notifications();
             track notification.id
           ) {
 
             <button
               type="button"
               class="notification-item"
-              (click)="
-                openNotification(notification)
-              "
+              (click)="openNotification(notification)"
             >
 
               <div class="notification-item-icon">
-                ◷
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="8"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                  />
+
+                  <path
+                    d="M12 8v4l2.5 2"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                </svg>
+
               </div>
 
 
@@ -123,19 +193,29 @@
                   {{ notification.title }}
                 </strong>
 
+
                 <p>
                   {{ notification.message }}
                 </p>
 
-                <span>
-                  {{
-                    formatNotificationTime(
-                      notification.scheduledAt
-                    )
-                  }}
+
+                <span class="notification-time">
+
+                  {{ formatNotificationTime(
+                    notification.scheduledAt
+                  ) }}
+
                 </span>
 
               </div>
+
+
+              <span
+                class="notification-item-arrow"
+                aria-hidden="true"
+              >
+                →
+              </span>
 
             </button>
 

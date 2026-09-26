@@ -33,12 +33,12 @@ public interface TaskExecutionRepository extends JpaRepository<TaskExecution, UU
             TaskExecutionStatus status
     );
 
-    /*
-     * Day 24
-     *
-     * Used to correlate notification reminders
-     * with actual user execution behavior.
-     */
+    List<TaskExecution> findByUserIdAndStatus(
+            UUID userId,
+            TaskExecutionStatus status
+    );
+
+    // ✅ ADD THIS
     List<TaskExecution> findByUserIdOrderByStartedAtDesc(
             UUID userId
     );
