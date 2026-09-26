@@ -1,145 +1,166 @@
 <div class="planner-page">
 
+  <!-- HEADER -->
+
   <header class="page-header">
 
     <div>
-      <p class="eyebrow">AI PRODUCTIVITY</p>
 
-      <h1>AI Planner</h1>
+      <span class="eyebrow">
+        AI PLANNER
+      </span>
 
-      <p class="page-description">
-        Tell MindMate when you're available and let AI
-        organize your tasks into a realistic plan.
+      <h1>
+        Plan your day
+      </h1>
+
+      <p>
+        Let MindMate organize your tasks around
+        your available time.
       </p>
-    </div>
-
-  </header>
-
-
-  <section class="planner-controls">
-
-    <div class="control-group">
-
-      <label for="planningDate">
-        Planning date
-      </label>
-
-      <input
-        id="planningDate"
-        type="date"
-        [(ngModel)]="planningDate"
-      />
 
     </div>
-
-
-    <div class="control-group">
-
-      <label for="availableFrom">
-        Available from
-      </label>
-
-      <input
-        id="availableFrom"
-        type="time"
-        [(ngModel)]="availableFrom"
-      />
-
-    </div>
-
-
-    <div class="control-group">
-
-      <label for="availableUntil">
-        Available until
-      </label>
-
-      <input
-        id="availableUntil"
-        type="time"
-        [(ngModel)]="availableUntil"
-      />
-
-    </div>
-
 
     <button
-      class="generate-button"
       type="button"
-      [disabled]="isGenerating"
+      class="primary-button"
+      [disabled]="isLoading"
       (click)="generatePlan()"
     >
 
-      @if (isGenerating) {
-        <span class="spinner"></span>
-        <span>Generating...</span>
+      @if (isLoading) {
+        <span class="button-spinner"></span>
+        Generating...
       } @else {
         <span>✦</span>
-        <span>Generate AI Plan</span>
+        Generate Plan
       }
 
     </button>
 
+  </header>
+
+
+  <!-- PLANNING CONTROLS -->
+
+  <section class="planning-controls">
+
+    <div class="section-heading">
+
+      <div>
+
+        <span class="eyebrow">
+          PLANNING WINDOW
+        </span>
+
+        <h2>
+          Tell MindMate when you're available
+        </h2>
+
+      </div>
+
+    </div>
+
+
+    <div class="control-grid">
+
+      <div class="form-field">
+
+        <label for="planning-date">
+          Date
+        </label>
+
+        <input
+          id="planning-date"
+          type="date"
+          [(ngModel)]="planningDate"
+        />
+
+      </div>
+
+
+      <div class="form-field">
+
+        <label for="available-from">
+          Available from
+        </label>
+
+        <input
+          id="available-from"
+          type="time"
+          [(ngModel)]="availableFrom"
+        />
+
+      </div>
+
+
+      <div class="form-field">
+
+        <label for="available-until">
+          Available until
+        </label>
+
+        <input
+          id="available-until"
+          type="time"
+          [(ngModel)]="availableUntil"
+        />
+
+      </div>
+
+    </div>
+
   </section>
 
 
+  <!-- MESSAGES -->
+
   @if (errorMessage) {
 
-    <div class="error-message">
+    <div class="message error-message">
       {{ errorMessage }}
     </div>
 
   }
 
+  @if (successMessage) {
 
-  @if (!plan && !isGenerating && !errorMessage) {
+    <div class="message success-message">
+      {{ successMessage }}
+    </div>
 
-    <section class="empty-state">
+  }
 
-      <div class="empty-icon">
-        ✦
+
+  <!-- LOADING -->
+
+  @if (isLoading) {
+
+    <section class="loading-card">
+
+      <div class="loading-spinner"></div>
+
+      <div>
+
+        <h3>
+          Building your plan...
+        </h3>
+
+        <p>
+          MindMate is checking your tasks,
+          schedule and available time.
+        </p>
+
       </div>
-
-      <h2>Plan your day with AI</h2>
-
-      <p>
-        Choose your available time and let MindMate
-        decide which tasks deserve your attention first.
-      </p>
-
-      <button
-        type="button"
-        class="empty-action"
-        (click)="generatePlan()"
-      >
-        Generate today's plan
-      </button>
 
     </section>
 
   }
 
 
-  @if (isGenerating) {
+  <!-- PLAN -->
 
-    <section class="loading-state">
-
-      <div class="loading-icon">
-        ✦
-      </div>
-
-      <h2>Building your plan...</h2>
-
-      <p>
-        AI is analyzing your tasks, priorities and schedule.
-      </p>
-
-    </section>
-
-  }
-
-
-  @if (plan) {
+  @if (!isLoading && plannerResponse) {
 
     <section class="plan-section">
 
@@ -147,91 +168,251 @@
 
         <div>
 
-          <p class="eyebrow">
-            YOUR AI PLAN
-          </p>
+          <span class="eyebrow">
+            {{ planningDate }}
+          </span>
 
           <h2>
-            {{ plan.summary }}
+            Today's plan
           </h2>
+
+          <p>
+            {{ planSummary }}
+          </p>
 
         </div>
 
-        <div class="plan-date">
-          {{ plan.plan.planningDate }}
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="generatePlan()"
+        >
+          Regenerate
+        </button>
+
+      </div>
+
+
+      <!-- STATS -->
+
+      <div class="stats-grid">
+
+        <div class="stat-card">
+
+          <span class="stat-label">
+            Tasks planned
+          </span>
+
+          <strong>
+            {{ planItems.length }}
+          </strong>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <span class="stat-label">
+            Planned time
+          </span>
+
+          <strong>
+            {{ formatDuration(totalPlannedMinutes) }}
+          </strong>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <span class="stat-label">
+            Available time
+          </span>
+
+          <strong>
+            {{ formatDuration(availableMinutes) }}
+          </strong>
+
+        </div>
+
+
+        <div class="stat-card">
+
+          <span class="stat-label">
+            Capacity used
+          </span>
+
+          <strong>
+            {{ utilizationPercentage }}%
+          </strong>
+
         </div>
 
       </div>
 
 
+      <!-- CAPACITY BAR -->
+
+      <div class="capacity-card">
+
+        <div class="capacity-header">
+
+          <div>
+
+            <span class="capacity-title">
+              Day capacity
+            </span>
+
+            <span class="capacity-description">
+              {{ formatDuration(totalPlannedMinutes) }}
+              of
+              {{ formatDuration(availableMinutes) }}
+              planned
+            </span>
+
+          </div>
+
+          <strong>
+            {{ utilizationPercentage }}%
+          </strong>
+
+        </div>
+
+        <div class="capacity-track">
+
+          <div
+            class="capacity-progress"
+            [style.width.%]="utilizationPercentage"
+          ></div>
+
+        </div>
+
+      </div>
+
+
+      <!-- TASK LIST -->
+
       <div class="timeline">
 
-        @for (
-          item of plan.plan.items;
-          track item.taskId
-        ) {
+        @if (planItems.length === 0) {
 
-          <article class="timeline-item">
+          <div class="empty-plan">
 
-            <div class="time-column">
-
-              <strong>
-                {{ formatTime(item.startAt) }}
-              </strong>
-
-              <span>
-                {{ formatTime(item.endAt) }}
-              </span>
-
+            <div class="empty-icon">
+              ✦
             </div>
 
+            <h3>
+              Nothing to schedule
+            </h3>
 
-            <div class="timeline-line">
+            <p>
+              You don't have any eligible tasks
+              for this planning window.
+            </p>
 
-              <div class="timeline-dot"></div>
+          </div>
 
-            </div>
+        } @else {
+
+          @for (
+            item of planItems;
+            track item.taskId
+          ) {
+
+            <article class="plan-card">
+
+              <div class="timeline-marker">
+                <span></span>
+              </div>
 
 
-            <div class="task-card">
+              <div class="plan-card-content">
 
-              <div class="task-card-header">
+                <div class="plan-card-top">
 
-                <div>
+                  <div>
 
-                  <h3>
-                    {{ item.taskTitle }}
-                  </h3>
+                    <span class="task-label">
+                      PLANNED TASK
+                    </span>
 
-                  <span class="duration">
-                    {{ getDuration(item) }}
+                    <h3>
+                      {{ item.taskId }}
+                    </h3>
+
+                  </div>
+
+                  <span
+                    class="duration-badge"
+                  >
+                    {{ getTaskDuration(item) }}
+                  </span>
+
+                </div>
+
+
+                <div class="task-time">
+
+                  <span class="time-icon">
+                    ◷
+                  </span>
+
+                  {{ getTaskTimeRange(item) }}
+
+                </div>
+
+
+                <div class="task-meta">
+
+                  <span>
+                    AI scheduled
+                  </span>
+
+                  <span class="dot"></span>
+
+                  <span>
+                    Based on your available time
                   </span>
 
                 </div>
 
               </div>
 
+            </article>
 
-              <p class="reason">
-                {{ item.reason }}
-              </p>
-
-            </div>
-
-          </article>
-
-        }
-
-
-        @if (plan.plan.items.length === 0) {
-
-          <div class="no-tasks">
-            No tasks could be scheduled for this time window.
-          </div>
+          }
 
         }
 
       </div>
+
+    </section>
+
+  } @else if (!isLoading) {
+
+    <section class="empty-state">
+
+      <div class="empty-state-icon">
+        ✦
+      </div>
+
+      <h2>
+        Your day is waiting
+      </h2>
+
+      <p>
+        Choose your available time and generate
+        an intelligent plan for your tasks.
+      </p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="generatePlan()"
+      >
+        Generate My Plan
+      </button>
 
     </section>
 

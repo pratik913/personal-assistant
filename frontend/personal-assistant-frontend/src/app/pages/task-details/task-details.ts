@@ -401,11 +401,11 @@ export class TaskDetails {
         this.taskForm.controls.priority.value,
 
       dueDate:
-        this.taskForm.controls.dueDate.value,
+        this.taskForm.controls.dueDate.value ?? undefined,
 
       estimatedMinutes:
         this.taskForm.controls
-          .estimatedMinutes.value
+          .estimatedMinutes.value ?? undefined
     };
 
     this.isSaving = true;

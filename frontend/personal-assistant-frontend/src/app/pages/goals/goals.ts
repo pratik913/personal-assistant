@@ -438,8 +438,7 @@ export class Goals implements OnInit {
         description:
           task.description?.trim() || '',
 
-        status:
-          'TODO',
+  
 
         priority:
           task.priority,

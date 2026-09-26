@@ -420,7 +420,6 @@ export class GoalDetails implements OnInit {
     this.taskService.createTask({
       title,
       description: this.newTask.description.trim(),
-      status: 'TODO',
       priority: this.newTask.priority,
       estimatedMinutes:
         this.newTask.estimatedMinutes || undefined,

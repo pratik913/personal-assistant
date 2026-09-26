@@ -12,7 +12,8 @@ import { Capture } from './pages/capture/capture';
 import { Tasks } from './pages/tasks/tasks';
 import { TaskDetails } from './pages/task-details/task-details';
 import { Schedule } from './pages/schedule/schedule';
-import { Planner } from './pages/planner/planner';
+import { PlannerComponent } from './pages/planner/planner';
+
 import { Goals } from './pages/goals/goals';
 import { Settings } from './pages/settings/settings';
 import { GoalDetails } from './pages/goal-details/goal-details';
@@ -65,7 +66,7 @@ export const routes: Routes = [
       },
       {
         path: 'planner',
-        component: Planner
+        component: PlannerComponent
       },
       {
         path: 'goals',
