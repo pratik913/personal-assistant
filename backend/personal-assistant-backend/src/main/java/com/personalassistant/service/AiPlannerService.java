@@ -7,7 +7,6 @@ import com.personalassistant.dto.AiPlanData;
 import com.personalassistant.dto.AiPlanItem;
 import com.personalassistant.dto.AiPlanResponse;
 import com.personalassistant.dto.CreateAiPlanRequest;
-import com.personalassistant.dto.TaskPlanningInsightResponse;
 import com.personalassistant.entity.AiPlan;
 import com.personalassistant.entity.ScheduleEntry;
 import com.personalassistant.entity.Task;
@@ -35,13 +34,23 @@ import java.util.stream.Collectors;
 public class AiPlannerService {
 
     private final AiPlanRepository aiPlanRepository;
+
     private final UserRepository userRepository;
+
     private final TaskRepository taskRepository;
+
     private final ScheduleEntryRepository scheduleEntryRepository;
+
     private final AiService aiService;
+
     private final AiPlanMapper aiPlanMapper;
+
     private final ObjectMapper objectMapper;
+
     private final TaskPlanningService taskPlanningService;
+
+    private final NotificationService notificationService;
+
 
     public AiPlannerService(
             AiPlanRepository aiPlanRepository,
@@ -51,36 +60,57 @@ public class AiPlannerService {
             AiService aiService,
             AiPlanMapper aiPlanMapper,
             ObjectMapper objectMapper,
-            TaskPlanningService taskPlanningService
+            TaskPlanningService taskPlanningService,
+            NotificationService notificationService
     ) {
-        this.aiPlanRepository = aiPlanRepository;
-        this.userRepository = userRepository;
-        this.taskRepository = taskRepository;
-        this.scheduleEntryRepository = scheduleEntryRepository;
-        this.aiService = aiService;
-        this.aiPlanMapper = aiPlanMapper;
-        this.objectMapper = objectMapper;
-        this.taskPlanningService = taskPlanningService;
+
+        this.aiPlanRepository =
+                aiPlanRepository;
+
+        this.userRepository =
+                userRepository;
+
+        this.taskRepository =
+                taskRepository;
+
+        this.scheduleEntryRepository =
+                scheduleEntryRepository;
+
+        this.aiService =
+                aiService;
+
+        this.aiPlanMapper =
+                aiPlanMapper;
+
+        this.objectMapper =
+                objectMapper;
+
+        this.taskPlanningService =
+                taskPlanningService;
+
+        this.notificationService =
+                notificationService;
+
     }
+
 
     public AiPlanResponse createPlan(
             UUID userId,
             CreateAiPlanRequest request
     ) {
 
-        User user = userRepository
-                .findById(userId)
-                .orElseThrow(() ->
-                        new UserNotFoundException(
-                                "User not found."
-                        )
-                );
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() ->
+                                new UserNotFoundException(
+                                        "User not found."
+                                )
+                        );
+
 
         /*
          * Get all tasks that are not completed.
-         *
-         * Completed tasks don't need to be considered
-         * by the AI planner.
          */
         List<Task> tasks =
                 taskRepository.findByUserIdAndStatusNot(
@@ -88,11 +118,15 @@ public class AiPlannerService {
                         TaskStatus.COMPLETED
                 );
 
+
         /*
          * Get the user's existing schedule.
          */
         List<ScheduleEntry> scheduleEntries =
-                scheduleEntryRepository.findByUserId(userId);
+                scheduleEntryRepository.findByUserId(
+                        userId
+                );
+
 
         /*
          * Only schedule entries belonging to the
@@ -105,9 +139,9 @@ public class AiPlannerService {
                         user
                 );
 
+
         /*
-         * Build the information that will be sent
-         * to the AI planner.
+         * Build the information sent to AI.
          */
         String planningContext =
                 buildPlanningContext(
@@ -117,19 +151,18 @@ public class AiPlannerService {
                         relevantScheduleEntries
                 );
 
+
         /*
-         * Ask the AI to generate a plan.
+         * Ask AI to generate the plan.
          */
         AiPlanData aiPlanData =
                 aiService.generatePlan(
                         planningContext
                 );
 
+
         /*
          * Never trust AI output directly.
-         *
-         * Validate the generated plan against
-         * our application rules.
          */
         validatePlan(
                 aiPlanData,
@@ -139,9 +172,9 @@ public class AiPlannerService {
                 relevantScheduleEntries
         );
 
+
         /*
-         * Convert the structured AI response into
-         * JSON so it can be stored in PostgreSQL JSONB.
+         * Convert AI response to JSON.
          */
         String planDataJson;
 
@@ -158,28 +191,47 @@ public class AiPlannerService {
                     "Unable to save AI plan data.",
                     exception
             );
+
         }
 
+
         /*
-         * Create the database entity.
+         * Create database entity.
          */
-        AiPlan aiPlan = new AiPlan();
+        AiPlan aiPlan =
+                new AiPlan();
 
         aiPlan.setUser(user);
 
         aiPlan.setSummary(
-                buildSummary(aiPlanData)
+                buildSummary(
+                        aiPlanData
+                )
         );
 
         aiPlan.setPlanData(
                 planDataJson
         );
 
+
         /*
-         * Persist the generated plan.
+         * Persist generated plan.
          */
         AiPlan savedPlan =
-                aiPlanRepository.save(aiPlan);
+                aiPlanRepository.save(
+                        aiPlan
+                );
+
+
+        /*
+         * Create notifications for the
+         * scheduled tasks.
+         */
+        createNotificationsForPlan(
+                userId,
+                aiPlanData
+        );
+
 
         /*
          * Convert entity -> API response.
@@ -187,7 +239,52 @@ public class AiPlannerService {
         return aiPlanMapper.toResponse(
                 savedPlan
         );
+
     }
+
+
+    private void createNotificationsForPlan(
+            UUID userId,
+            AiPlanData plan
+    ) {
+
+        if (
+                plan == null ||
+                        plan.items() == null
+        ) {
+
+            return;
+
+        }
+
+
+        for (
+                AiPlanItem item :
+                plan.items()
+        ) {
+
+            if (
+                    item == null ||
+                            item.taskId() == null ||
+                            item.startAt() == null
+            ) {
+
+                continue;
+
+            }
+
+
+            notificationService
+                    .createTaskStartingNotification(
+                            userId,
+                            item.taskId(),
+                            item.startAt()
+                    );
+
+        }
+
+    }
+
 
     private List<ScheduleEntry> filterScheduleForPlanningDate(
             List<ScheduleEntry> scheduleEntries,
@@ -196,7 +293,10 @@ public class AiPlannerService {
     ) {
 
         ZoneId zoneId =
-                ZoneId.of(user.getTimezone());
+                ZoneId.of(
+                        user.getTimezone()
+                );
+
 
         return scheduleEntries
                 .stream()
@@ -209,7 +309,9 @@ public class AiPlannerService {
                                 )
                 )
                 .toList();
+
     }
+
 
     private String buildPlanningContext(
             CreateAiPlanRequest request,
@@ -221,96 +323,106 @@ public class AiPlannerService {
         StringBuilder context =
                 new StringBuilder();
 
-        context.append("User timezone: ")
-                .append(user.getTimezone())
+
+        context.append(
+                        "User timezone: "
+                )
+                .append(
+                        user.getTimezone()
+                )
                 .append("\n\n");
 
-        context.append("Planning date: ")
-                .append(request.getPlanningDate())
+
+        context.append(
+                        "Planning date: "
+                )
+                .append(
+                        request.getPlanningDate()
+                )
                 .append("\n\n");
 
-        context.append("Available time: ")
-                .append(request.getAvailableFrom())
+
+        context.append(
+                        "Available time: "
+                )
+                .append(
+                        request.getAvailableFrom()
+                )
                 .append(" - ")
-                .append(request.getAvailableUntil())
+                .append(
+                        request.getAvailableUntil()
+                )
                 .append("\n\n");
+
 
         /*
          * Tasks available for planning.
          */
-        context.append("Tasks:\n");
+        context.append(
+                "Tasks:\n"
+        );
+
 
         tasks.forEach(task -> {
 
-            context.append("- Task ID: ")
-                    .append(task.getId())
-                    .append("\n");
-
-            context.append("  Title: ")
-                    .append(task.getTitle())
-                    .append("\n");
-
-            context.append("  Priority: ")
-                    .append(task.getPriority())
-                    .append("\n");
-
-            /*
-             * Keep the original estimate visible.
-             */
-            context.append("  Current estimated minutes: ")
-                    .append(task.getEstimatedMinutes())
-                    .append("\n");
-
-            /*
-             * Day 17 planning intelligence.
-             *
-             * The application calculates the recommendation.
-             * The AI only uses the recommendation when arranging
-             * the user's day.
-             */
-            TaskPlanningInsightResponse planningInsight =
-                    taskPlanningService.getPlanningInsight(
-                            task.getId(),
-                            user.getId()
-                    );
-
             context.append(
-                            "  Historical average minutes: "
+                            "- Task ID: "
                     )
                     .append(
-                            planningInsight.averageActualMinutes()
+                            task.getId()
                     )
                     .append("\n");
+
 
             context.append(
-                            "  Recommended planning minutes: "
+                            "  Title: "
                     )
                     .append(
-                            planningInsight.recommendedMinutes()
+                            task.getTitle()
                     )
                     .append("\n");
+
 
             context.append(
-                            "  Planning confidence: "
+                            "  Priority: "
                     )
                     .append(
-                            planningInsight.confidence()
+                            task.getPriority()
                     )
                     .append("\n");
 
-            context.append("  Status: ")
-                    .append(task.getStatus())
+
+            context.append(
+                            "  Estimated minutes: "
+                    )
+                    .append(
+                            task.getEstimatedMinutes()
+                    )
+                    .append("\n");
+
+
+            context.append(
+                            "  Status: "
+                    )
+                    .append(
+                            task.getStatus()
+                    )
                     .append("\n\n");
+
         });
 
+
         /*
-         * Existing schedule that the AI must respect.
+         * Existing schedule.
          */
         context.append(
                 "Existing schedule for this date:\n"
         );
 
-        if (scheduleEntries.isEmpty()) {
+
+        if (
+                scheduleEntries.isEmpty()
+        ) {
 
             context.append(
                     "- No existing scheduled tasks.\n"
@@ -321,54 +433,29 @@ public class AiPlannerService {
             scheduleEntries.forEach(entry -> {
 
                 context.append("- ")
-                        .append(entry.getStartAt())
+                        .append(
+                                entry.getStartAt()
+                        )
                         .append(" - ")
-                        .append(entry.getEndAt())
+                        .append(
+                                entry.getEndAt()
+                        )
                         .append(": ")
                         .append(
-                                entry.getTask().getTitle()
+                                entry.getTask()
+                                        .getTitle()
                         )
                         .append("\n");
+
             });
+
         }
 
-        /*
-         * Important planner instructions.
-         */
-        context.append("\nPlanner rules:\n");
-
-        context.append(
-                "- Prefer the recommended planning duration "
-                        + "when scheduling a task.\n"
-        );
-
-        context.append(
-                "- Do not schedule tasks outside the "
-                        + "available time window.\n"
-        );
-
-        context.append(
-                "- Respect existing schedule entries.\n"
-        );
-
-        context.append(
-                "- Prioritize higher priority tasks.\n"
-        );
-
-        context.append(
-                "- Do not invent tasks.\n"
-        );
-
-        context.append(
-                "- Use only the provided task IDs.\n"
-        );
-
-        context.append(
-                "- Avoid unnecessary fragmentation.\n"
-        );
 
         return context.toString();
+
     }
+
 
     private void validatePlan(
             AiPlanData plan,
@@ -378,33 +465,32 @@ public class AiPlannerService {
             List<ScheduleEntry> existingScheduleEntries
     ) {
 
-        /*
-         * Basic AI response validation.
-         */
-        if (plan == null ||
-                plan.items() == null) {
+        if (
+                plan == null ||
+                        plan.items() == null
+        ) {
 
             throw new IllegalStateException(
                     "AI returned an invalid plan."
             );
+
         }
 
-        /*
-         * Get IDs of tasks that the user actually owns
-         * and that are available for planning.
-         */
+
         Set<UUID> availableTaskIds =
                 availableTasks
                         .stream()
                         .map(Task::getId)
-                        .collect(Collectors.toSet());
+                        .collect(
+                                Collectors.toSet()
+                        );
 
-        /*
-         * Convert user's local planning window
-         * into UTC Instants.
-         */
+
         ZoneId zoneId =
-                ZoneId.of(user.getTimezone());
+                ZoneId.of(
+                        user.getTimezone()
+                );
+
 
         Instant availableFrom =
                 request.getPlanningDate()
@@ -414,6 +500,7 @@ public class AiPlannerService {
                         .atZone(zoneId)
                         .toInstant();
 
+
         Instant availableUntil =
                 request.getPlanningDate()
                         .atTime(
@@ -422,90 +509,78 @@ public class AiPlannerService {
                         .atZone(zoneId)
                         .toInstant();
 
-        /*
-         * Validate every AI-generated item.
-         */
-        for (AiPlanItem item : plan.items()) {
 
-            /*
-             * AI must only use tasks that actually exist
-             * and belong to this user.
-             */
-            if (item.taskId() == null ||
-                    !availableTaskIds.contains(
-                            item.taskId()
-                    )) {
+        for (
+                AiPlanItem item :
+                plan.items()
+        ) {
+
+            if (
+                    item.taskId() == null ||
+                            !availableTaskIds.contains(
+                                    item.taskId()
+                            )
+            ) {
 
                 throw new IllegalStateException(
                         "AI returned a task that is not available."
                 );
+
             }
 
-            /*
-             * Start and end times must exist.
-             */
-            if (item.startAt() == null ||
-                    item.endAt() == null) {
+
+            if (
+                    item.startAt() == null ||
+                            item.endAt() == null
+            ) {
 
                 throw new IllegalStateException(
                         "AI returned an invalid time range."
                 );
+
             }
 
-            /*
-             * End must be after start.
-             */
-            if (!item.startAt()
-                    .isBefore(item.endAt())) {
+
+            if (
+                    !item.endAt()
+                            .isAfter(
+                                    item.startAt()
+                            )
+            ) {
 
                 throw new IllegalStateException(
                         "AI returned an invalid task duration."
                 );
+
             }
 
-            /*
-             * AI must not schedule outside the
-             * user's requested availability.
-             */
-            if (item.startAt()
-                    .isBefore(availableFrom) ||
-                    item.endAt()
-                            .isAfter(availableUntil)) {
+
+            if (
+                    item.startAt()
+                            .isBefore(
+                                    availableFrom
+                            ) ||
+                            item.endAt()
+                                    .isAfter(
+                                            availableUntil
+                                    )
+            ) {
 
                 throw new IllegalStateException(
-                        "AI scheduled a task outside "
-                                + "the available time."
+                        "AI scheduled a task outside the available window."
                 );
+
             }
+
         }
 
-        /*
-         * Make sure AI-generated tasks don't
-         * overlap with each other.
-         */
-        validateNoOverlaps(
-                plan.items()
-        );
 
         /*
-         * Make sure AI-generated tasks don't
-         * overlap with the user's existing schedule.
-         */
-        validateAgainstExistingSchedule(
-                plan.items(),
-                existingScheduleEntries
-        );
-    }
-
-    private void validateNoOverlaps(
-            List<AiPlanItem> items
-    ) {
-
-        /*
-         * Sort tasks by start time.
+         * Sort generated items by start time.
          */
         List<AiPlanItem> sortedItems =
-                items.stream()
+                plan.items()
+                        .stream()
                         .sorted(
                                 Comparator.comparing(
                                         AiPlanItem::startAt
@@ -513,86 +588,97 @@ public class AiPlannerService {
                         )
                         .toList();
 
+
         /*
-         * Compare every task with the task
-         * immediately before it.
+         * Check overlap between AI-generated items.
          */
         for (
-                int i = 1;
-                i < sortedItems.size();
-                i++
+                int index = 1;
+                index < sortedItems.size();
+                index++
         ) {
 
             AiPlanItem previous =
-                    sortedItems.get(i - 1);
+                    sortedItems.get(
+                            index - 1
+                    );
 
             AiPlanItem current =
-                    sortedItems.get(i);
+                    sortedItems.get(
+                            index
+                    );
 
-            if (current.startAt()
-                    .isBefore(
-                            previous.endAt()
-                    )) {
+
+            if (
+                    current.startAt()
+                            .isBefore(
+                                    previous.endAt()
+                            )
+            ) {
 
                 throw new IllegalStateException(
                         "AI generated overlapping tasks."
                 );
-            }
-        }
-    }
 
-    private void validateAgainstExistingSchedule(
-            List<AiPlanItem> items,
-            List<ScheduleEntry> existingScheduleEntries
-    ) {
+            }
+
+        }
+
 
         /*
-         * Compare every AI-generated task against
-         * every existing schedule entry.
+         * Check overlap with existing schedule.
          */
-        for (AiPlanItem item : items) {
+        for (
+                AiPlanItem item :
+                plan.items()
+        ) {
 
             for (
-                    ScheduleEntry existingEntry :
+                    ScheduleEntry entry :
                     existingScheduleEntries
             ) {
 
                 boolean overlaps =
                         item.startAt()
                                 .isBefore(
-                                        existingEntry
-                                                .getEndAt()
+                                        entry.getEndAt()
                                 )
                                 &&
                                 item.endAt()
                                         .isAfter(
-                                                existingEntry
-                                                        .getStartAt()
+                                                entry.getStartAt()
                                         );
+
 
                 if (overlaps) {
 
                     throw new IllegalStateException(
-                            "AI scheduled a task that overlaps "
-                                    + "with an existing schedule entry."
+                            "AI generated a task that overlaps an existing schedule."
                     );
+
                 }
+
             }
+
         }
+
     }
+
 
     private String buildSummary(
-            AiPlanData aiPlanData
+            AiPlanData plan
     ) {
 
-        if (aiPlanData.items() == null ||
-                aiPlanData.items().isEmpty()) {
+        int count =
+                plan.items() == null
+                        ? 0
+                        : plan.items().size();
 
-            return "No tasks could be scheduled.";
-        }
 
         return "AI generated a plan with "
-                + aiPlanData.items().size()
+                + count
                 + " scheduled task(s).";
+
     }
+
 }

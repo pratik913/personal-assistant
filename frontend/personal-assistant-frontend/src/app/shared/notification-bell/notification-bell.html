@@ -1,0 +1,152 @@
+<div class="notification-container">
+
+
+  <!-- ===================================================== -->
+  <!-- BELL -->
+  <!-- ===================================================== -->
+
+  <button
+    type="button"
+    class="notification-button"
+    aria-label="Notifications"
+    [attr.aria-expanded]="isOpen"
+    (click)="toggle()"
+  >
+
+    <span class="bell-icon">
+      ♧
+    </span>
+
+
+    @if (unreadCount > 0) {
+
+      <span class="notification-badge">
+
+        {{
+          unreadCount > 9
+            ? '9+'
+            : unreadCount
+        }}
+
+      </span>
+
+    }
+
+  </button>
+
+
+
+  <!-- ===================================================== -->
+  <!-- DROPDOWN -->
+  <!-- ===================================================== -->
+
+  @if (isOpen) {
+
+    <div class="notification-panel">
+
+
+      <header class="notification-header">
+
+        <div>
+
+          <span class="eyebrow">
+            MindMate
+          </span>
+
+          <h3>
+            Notifications
+          </h3>
+
+        </div>
+
+
+        @if (unreadCount > 0) {
+
+          <span class="notification-count">
+
+            {{ unreadCount }} new
+
+          </span>
+
+        }
+
+      </header>
+
+
+
+      @if (notifications.length === 0) {
+
+        <div class="notification-empty">
+
+          <div class="empty-icon">
+            ✓
+          </div>
+
+          <strong>
+            You're all caught up
+          </strong>
+
+          <p>
+            No upcoming task reminders right now.
+          </p>
+
+        </div>
+
+      }
+
+
+      @if (notifications.length > 0) {
+
+        <div class="notification-list">
+
+          @for (
+            notification of notifications;
+            track notification.id
+          ) {
+
+            <button
+              type="button"
+              class="notification-item"
+              (click)="
+                openNotification(notification)
+              "
+            >
+
+              <div class="notification-item-icon">
+                ◷
+              </div>
+
+
+              <div class="notification-item-content">
+
+                <strong>
+                  {{ notification.title }}
+                </strong>
+
+                <p>
+                  {{ notification.message }}
+                </p>
+
+                <span>
+                  {{
+                    formatNotificationTime(
+                      notification.scheduledAt
+                    )
+                  }}
+                </span>
+
+              </div>
+
+            </button>
+
+          }
+
+        </div>
+
+      }
+
+    </div>
+
+  }
+
+</div>

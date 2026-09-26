@@ -3,7 +3,21 @@
   <app-sidebar />
 
   <main class="main-content">
-    <router-outlet />
+
+    <header class="app-header">
+
+      <div class="header-spacer"></div>
+
+      <div class="header-actions">
+        <app-notification-bell />
+      </div>
+
+    </header>
+
+    <div class="page-content">
+      <router-outlet />
+    </div>
+
   </main>
 
 </div>
