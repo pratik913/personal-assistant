@@ -1,347 +1,501 @@
+import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  NgZone,
   inject
 } from '@angular/core';
-
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
 import {
-  AiPlanItem,
-  DailyPlannerResponse,
-  TaskService
-} from '../../services/task.service';
+  HttpClient,
+  HttpErrorResponse
+} from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+
+interface PlannerItem {
+  taskId: string;
+  taskTitle: string;
+  startAt: string;
+  endAt: string;
+  reason: string;
+}
+
+interface PlannerData {
+  planningDate: string;
+  items: PlannerItem[];
+}
+
+interface AiPlanResponse {
+  id: string;
+  summary: string;
+  plan: PlannerData;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface DailyPlannerResponse {
+  planningDate: string;
+  availableFrom: string;
+  availableUntil: string;
+  plan: AiPlanResponse;
+}
 
 @Component({
   selector: 'app-planner',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule
+    FormsModule,
+    RouterLink
   ],
   templateUrl: './planner.html',
-  styleUrl: './planner.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styleUrl: './planner.scss'
 })
-export class PlannerComponent {
+export class Planner {
 
-  private readonly taskService = inject(TaskService);
-  private readonly changeDetectorRef =
-    inject(ChangeDetectorRef);
+  private readonly http = inject(HttpClient);
 
-  planningDate = this.formatDate(
-    new Date()
-  );
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private readonly ngZone = inject(NgZone);
+
+  private readonly plannerUrl =
+    'http://localhost:8080/api/daily-planner/generate';
+
+
+  // =========================================================
+  // FORM
+  // =========================================================
+
+  readonly today = this.getTodayDate();
+
+  planningDate = this.today;
 
   availableFrom = '09:00';
 
-  availableUntil = '22:00';
+  availableUntil = '18:00';
 
-  isLoading = false;
+
+  // =========================================================
+  // STATE
+  // =========================================================
+
+  plan: DailyPlannerResponse | null = null;
+
+  isGenerating = false;
 
   errorMessage = '';
 
-  successMessage = '';
 
-  plannerResponse: DailyPlannerResponse | null = null;
+  // =========================================================
+  // DERIVED DATA
+  // =========================================================
 
-  ngOnInit(): void {
-    this.generatePlan();
-  }
+  get planItems(): PlannerItem[] {
 
-  generatePlan(): void {
+    const items =
+      this.plan?.plan?.plan?.items ?? [];
 
-    if (
-      !this.planningDate ||
-      !this.availableFrom ||
-      !this.availableUntil
-    ) {
-      this.errorMessage =
-        'Please provide a planning date and available time.';
-      return;
-    }
-
-    if (
-      this.availableFrom >= this.availableUntil
-    ) {
-      this.errorMessage =
-        'Available start time must be before end time.';
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    this.changeDetectorRef.detectChanges();
-
-    this.taskService
-      .generateDailyPlan(
-        this.planningDate,
-        this.availableFrom,
-        this.availableUntil
-      )
-      .subscribe({
-
-        next: (response) => {
-
-          this.plannerResponse =
-            response;
-
-          this.successMessage =
-            'Your daily plan was generated successfully.';
-
-          this.isLoading = false;
-
-          this.changeDetectorRef.detectChanges();
-        },
-
-        error: (error) => {
-
-          console.error(
-            'Failed to generate daily plan:',
-            error
-          );
-
-          this.isLoading = false;
-
-          if (error?.status === 401) {
-
-            this.errorMessage =
-              'Your session has expired. Please log in again.';
-
-          } else if (error?.status === 400) {
-
-            this.errorMessage =
-              error?.error?.message ??
-              'The planning inputs are invalid.';
-
-          } else if (error?.status === 409) {
-
-            this.errorMessage =
-              error?.error?.message ??
-              'The planner could not create a valid plan.';
-
-          } else {
-
-            this.errorMessage =
-              'Unable to generate your plan. Please try again.';
-          }
-
-          this.changeDetectorRef.detectChanges();
-        }
-      });
-  }
-
-  get planItems(): AiPlanItem[] {
-
-    return (
-      this.plannerResponse
-        ?.plan
-        ?.planData
-        ?.items ?? []
+    return [...items].sort(
+      (first, second) => {
+        return (
+          new Date(first.startAt).getTime() -
+          new Date(second.startAt).getTime()
+        );
+      }
     );
   }
 
-  get totalPlannedMinutes(): number {
-
-    return this.planItems.reduce(
-      (total, item) =>
-        total +
-        this.calculateDuration(
-          item.startAt,
-          item.endAt
-        ),
-      0
-    );
-  }
-
-  get availableMinutes(): number {
-
-    if (
-      !this.availableFrom ||
-      !this.availableUntil
-    ) {
-      return 0;
-    }
-
-    const start =
-      this.timeToMinutes(
-        this.availableFrom
-      );
-
-    const end =
-      this.timeToMinutes(
-        this.availableUntil
-      );
-
-    return Math.max(
-      0,
-      end - start
-    );
-  }
-
-  get utilizationPercentage(): number {
-
-    if (
-      this.availableMinutes <= 0
-    ) {
-      return 0;
-    }
-
-    return Math.min(
-      100,
-      Math.round(
-        (
-          this.totalPlannedMinutes /
-          this.availableMinutes
-        ) * 100
-      )
-    );
-  }
 
   get planSummary(): string {
 
-    return (
-      this.plannerResponse
-        ?.plan
-        ?.summary ??
-      'No plan generated yet.'
-    );
+    return this.plan?.plan?.summary ?? '';
   }
 
-  formatTime(
+
+  get hasPlan(): boolean {
+
+    return this.plan !== null;
+  }
+
+
+  // =========================================================
+  // GENERATE PLAN
+  // =========================================================
+
+  async generatePlan(): Promise<void> {
+
+    if (this.isGenerating) {
+      return;
+    }
+
+
+    // -------------------------------------------------------
+    // Reset previous errors
+    // -------------------------------------------------------
+
+    this.errorMessage = '';
+
+
+    // -------------------------------------------------------
+    // Validate date
+    // -------------------------------------------------------
+
+    if (!this.planningDate) {
+
+      this.errorMessage =
+        'Please select a planning date.';
+
+      this.refreshView();
+
+      return;
+    }
+
+
+    if (this.planningDate < this.today) {
+
+      this.errorMessage =
+        'You cannot create a plan for a past date.';
+
+      this.refreshView();
+
+      return;
+    }
+
+
+    // -------------------------------------------------------
+    // Validate time
+    // -------------------------------------------------------
+
+    if (
+      !this.availableFrom ||
+      !this.availableUntil
+    ) {
+
+      this.errorMessage =
+        'Please select your available time window.';
+
+      this.refreshView();
+
+      return;
+    }
+
+
+    if (
+      this.availableFrom >=
+      this.availableUntil
+    ) {
+
+      this.errorMessage =
+        'Available-from time must be before available-until time.';
+
+      this.refreshView();
+
+      return;
+    }
+
+
+    // -------------------------------------------------------
+    // Start loading state
+    // -------------------------------------------------------
+
+    this.isGenerating = true;
+
+    this.plan = null;
+
+    this.refreshView();
+
+
+    console.log(
+      '[MindMate Planner] Generating plan...'
+    );
+
+    console.log(
+      '[MindMate Planner] Request:',
+      {
+        planningDate: this.planningDate,
+        availableFrom: this.availableFrom,
+        availableUntil: this.availableUntil
+      }
+    );
+
+
+    try {
+
+      // -----------------------------------------------------
+      // HTTP REQUEST
+      // -----------------------------------------------------
+
+      const response =
+        await firstValueFrom(
+          this.http.post<DailyPlannerResponse>(
+            this.plannerUrl,
+            null,
+            {
+              params: {
+                planningDate:
+                  this.planningDate,
+
+                availableFrom:
+                  this.availableFrom,
+
+                availableUntil:
+                  this.availableUntil
+              }
+            }
+          )
+        );
+
+
+      // -----------------------------------------------------
+      // IMPORTANT
+      // -----------------------------------------------------
+      //
+      // The backend response has this structure:
+      //
+      // response
+      //   └── plan
+      //        ├── summary
+      //        └── plan
+      //             └── items[]
+      //
+      // -----------------------------------------------------
+
+      console.log(
+        '[MindMate Planner] Response received:',
+        response
+      );
+
+
+      console.log(
+        '[MindMate Planner] Items:',
+        response?.plan?.plan?.items
+      );
+
+
+      // -----------------------------------------------------
+      // ENTER ANGULAR ZONE
+      // -----------------------------------------------------
+
+      this.ngZone.run(() => {
+
+        this.plan = response;
+
+        this.isGenerating = false;
+
+        this.errorMessage = '';
+
+        this.refreshView();
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        '[MindMate Planner] Request failed:',
+        error
+      );
+
+
+      this.ngZone.run(() => {
+
+        this.isGenerating = false;
+
+        this.plan = null;
+
+        this.errorMessage =
+          this.getErrorMessage(
+            error
+          );
+
+        this.refreshView();
+
+      });
+
+    } finally {
+
+      // -----------------------------------------------------
+      // FINAL SAFETY NET
+      // -----------------------------------------------------
+      //
+      // Even if something unexpected happens,
+      // the loading state cannot remain stuck.
+      //
+      // -----------------------------------------------------
+
+      this.ngZone.run(() => {
+
+        if (!this.plan) {
+
+          this.isGenerating = false;
+
+        }
+
+        this.refreshView();
+
+      });
+
+    }
+
+  }
+
+
+  // =========================================================
+  // TIME FORMATTING
+  // =========================================================
+
+  formatPlanTime(
     value: string
   ): string {
 
     if (!value) {
-      return '';
+      return '--:--';
     }
 
-    const parts =
-      value.split(':');
 
-    if (parts.length < 2) {
-      return value;
-    }
+    const date =
+      new Date(value);
 
-    const hour =
-      Number(parts[0]);
 
-    const minute =
-      parts[1];
-
-    const period =
-      hour >= 12
-        ? 'PM'
-        : 'AM';
-
-    const displayHour =
-      hour % 12 || 12;
-
-    return `${displayHour}:${minute} ${period}`;
-  }
-
-  formatDuration(
-    minutes: number
-  ): string {
-
-    if (minutes < 60) {
-      return `${minutes} min`;
-    }
-
-    const hours =
-      Math.floor(minutes / 60);
-
-    const remaining =
-      minutes % 60;
-
-    if (remaining === 0) {
-      return `${hours}h`;
-    }
-
-    return `${hours}h ${remaining}m`;
-  }
-
-  getTaskTimeRange(
-    item: AiPlanItem
-  ): string {
-
-    return `${this.formatTime(item.startAt)} → ${this.formatTime(item.endAt)}`;
-  }
-
-  getTaskDuration(
-    item: AiPlanItem
-  ): string {
-
-    return this.formatDuration(
-      this.calculateDuration(
-        item.startAt,
-        item.endAt
+    if (
+      Number.isNaN(
+        date.getTime()
       )
-    );
+    ) {
+
+      return '--:--';
+
+    }
+
+
+    return new Intl.DateTimeFormat(
+      undefined,
+      {
+        hour: 'numeric',
+        minute: '2-digit'
+      }
+    ).format(date);
+
   }
 
-  getPriorityClass(
-    item: AiPlanItem
-  ): string {
 
-    return 'priority-default';
-  }
+  // =========================================================
+  // DATE
+  // =========================================================
 
-  private calculateDuration(
-    startAt: string,
-    endAt: string
-  ): number {
+  private getTodayDate(): string {
 
-    const start =
-      this.timeToMinutes(
-        startAt.substring(0, 5)
-      );
+    const date =
+      new Date();
 
-    const end =
-      this.timeToMinutes(
-        endAt.substring(0, 5)
-      );
-
-    return Math.max(
-      0,
-      end - start
-    );
-  }
-
-  private timeToMinutes(
-    value: string
-  ): number {
-
-    const parts =
-      value.split(':');
-
-    return (
-      Number(parts[0]) * 60 +
-      Number(parts[1])
-    );
-  }
-
-  private formatDate(
-    date: Date
-  ): string {
 
     const year =
       date.getFullYear();
+
 
     const month =
       String(
         date.getMonth() + 1
       ).padStart(2, '0');
 
+
     const day =
       String(
         date.getDate()
       ).padStart(2, '0');
 
+
     return `${year}-${month}-${day}`;
+
   }
+
+
+  // =========================================================
+  // TRACKING
+  // =========================================================
+
+  trackByTask(
+    _index: number,
+    item: PlannerItem
+  ): string {
+
+    return item.taskId;
+
+  }
+
+
+  // =========================================================
+  // ERROR HANDLING
+  // =========================================================
+
+  private getErrorMessage(
+    error: unknown
+  ): string {
+
+    if (
+      error instanceof HttpErrorResponse
+    ) {
+
+      if (
+        error.error &&
+        typeof error.error === 'object' &&
+        typeof error.error.message === 'string'
+      ) {
+
+        return error.error.message;
+
+      }
+
+
+      if (
+        typeof error.error === 'string' &&
+        error.error.trim()
+      ) {
+
+        return error.error;
+
+      }
+
+
+      if (
+        error.message &&
+        error.message.trim()
+      ) {
+
+        return error.message;
+
+      }
+
+    }
+
+
+    if (
+      error instanceof Error &&
+      error.message
+    ) {
+
+      return error.message;
+
+    }
+
+
+    return (
+      'Unable to generate your daily plan.'
+    );
+
+  }
+
+
+  // =========================================================
+  // FORCE VIEW UPDATE
+  // =========================================================
+
+  private refreshView(): void {
+
+    this.cdr.detectChanges();
+
+  }
+
 }

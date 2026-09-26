@@ -29,30 +29,17 @@ public class DailyPlannerService {
             LocalTime availableUntil
     ) {
 
-        if (planningDate == null) {
-            throw new IllegalArgumentException(
-                    "Planning date is required."
-            );
-        }
-
-        if (availableFrom == null || availableUntil == null) {
-            throw new IllegalArgumentException(
-                    "Available start and end times are required."
-            );
-        }
-
-        if (!availableFrom.isBefore(availableUntil)) {
-            throw new IllegalArgumentException(
-                    "Available start time must be before available end time."
-            );
-        }
+        validateTimeWindow(
+                availableFrom,
+                availableUntil
+        );
 
         CreateAiPlanRequest request =
-                new CreateAiPlanRequest(
-                        planningDate,
-                        availableFrom,
-                        availableUntil
-                );
+                new CreateAiPlanRequest();
+
+        request.setPlanningDate(planningDate);
+        request.setAvailableFrom(availableFrom);
+        request.setAvailableUntil(availableUntil);
 
         AiPlanResponse plan =
                 aiPlannerService.createPlan(
@@ -66,5 +53,26 @@ public class DailyPlannerService {
                 availableUntil,
                 plan
         );
+    }
+
+    private void validateTimeWindow(
+            LocalTime availableFrom,
+            LocalTime availableUntil
+    ) {
+
+        if (availableFrom == null ||
+                availableUntil == null) {
+
+            throw new IllegalArgumentException(
+                    "Available time is required."
+            );
+        }
+
+        if (!availableFrom.isBefore(availableUntil)) {
+
+            throw new IllegalArgumentException(
+                    "Available-from time must be before available-until time."
+            );
+        }
     }
 }

@@ -12,7 +12,7 @@ import { Capture } from './pages/capture/capture';
 import { Tasks } from './pages/tasks/tasks';
 import { TaskDetails } from './pages/task-details/task-details';
 import { Schedule } from './pages/schedule/schedule';
-import { PlannerComponent } from './pages/planner/planner';
+import { Planner } from './pages/planner/planner';
 
 import { Goals } from './pages/goals/goals';
 import { Settings } from './pages/settings/settings';
@@ -66,7 +66,7 @@ export const routes: Routes = [
       },
       {
         path: 'planner',
-        component: PlannerComponent
+        component: Planner
       },
       {
         path: 'goals',
