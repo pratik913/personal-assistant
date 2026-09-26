@@ -90,7 +90,6 @@ public class AiPlannerService {
 
         this.notificationService =
                 notificationService;
-
     }
 
 
@@ -191,7 +190,6 @@ public class AiPlannerService {
                     "Unable to save AI plan data.",
                     exception
             );
-
         }
 
 
@@ -224,8 +222,14 @@ public class AiPlannerService {
 
 
         /*
-         * Create notifications for the
-         * scheduled tasks.
+         * Synchronize task-start notifications
+         * with the newly generated plan.
+         *
+         * This handles:
+         *
+         * 1. Existing matching notifications
+         * 2. Obsolete future notifications
+         * 3. Newly required notifications
          */
         createNotificationsForPlan(
                 userId,
@@ -239,10 +243,17 @@ public class AiPlannerService {
         return aiPlanMapper.toResponse(
                 savedPlan
         );
-
     }
 
 
+    /**
+     * Synchronizes task-start notifications with
+     * the generated AI plan.
+     *
+     * NotificationService owns the actual
+     * notification persistence and duplicate
+     * handling logic.
+     */
     private void createNotificationsForPlan(
             UUID userId,
             AiPlanData plan
@@ -254,35 +265,24 @@ public class AiPlannerService {
         ) {
 
             return;
-
         }
 
 
-        for (
-                AiPlanItem item :
-                plan.items()
-        ) {
-
-            if (
-                    item == null ||
-                            item.taskId() == null ||
-                            item.startAt() == null
-            ) {
-
-                continue;
-
-            }
-
-
-            notificationService
-                    .createTaskStartingNotification(
-                            userId,
-                            item.taskId(),
-                            item.startAt()
-                    );
-
-        }
-
+        /*
+         * Pass the complete generated plan to
+         * NotificationService.
+         *
+         * NotificationService decides:
+         *
+         * - which notifications already exist
+         * - which future notifications are obsolete
+         * - which notifications need to be created
+         */
+        notificationService
+                .createNotificationsForPlan(
+                        userId,
+                        plan.items()
+                );
     }
 
 
@@ -309,7 +309,6 @@ public class AiPlannerService {
                                 )
                 )
                 .toList();
-
     }
 
 
@@ -453,7 +452,6 @@ public class AiPlannerService {
 
 
         return context.toString();
-
     }
 
 
@@ -473,7 +471,6 @@ public class AiPlannerService {
             throw new IllegalStateException(
                     "AI returned an invalid plan."
             );
-
         }
 
 
@@ -525,7 +522,6 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI returned a task that is not available."
                 );
-
             }
 
 
@@ -537,7 +533,6 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI returned an invalid time range."
                 );
-
             }
 
 
@@ -551,7 +546,6 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI returned an invalid task duration."
                 );
-
             }
 
 
@@ -569,7 +563,6 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI scheduled a task outside the available window."
                 );
-
             }
 
         }

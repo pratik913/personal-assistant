@@ -33,19 +33,22 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final CaptureRepository captureRepository;
     private final GoalRepository goalRepository;
+    private final NotificationService notificationService;
 
     public TaskService(
             TaskRepository taskRepository,
             UserRepository userRepository,
             TaskMapper taskMapper,
             CaptureRepository captureRepository,
-            GoalRepository goalRepository
+            GoalRepository goalRepository,
+            NotificationService notificationService
     ) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.taskMapper = taskMapper;
         this.captureRepository = captureRepository;
         this.goalRepository = goalRepository;
+        this.notificationService = notificationService;
     }
 
     public TaskResponse createTask(
@@ -53,58 +56,68 @@ public class TaskService {
             UUID userId
     ) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new UserNotFoundException(
-                                "User not found"
-                        )
-                );
+        User user =
+                userRepository.findById(userId)
+                        .orElseThrow(() ->
+                                new UserNotFoundException(
+                                        "User not found"
+                                )
+                        );
 
-        Task task = taskMapper.toEntity(request);
+        Task task =
+                taskMapper.toEntity(request);
 
         task.setUser(user);
 
         if (request.getCaptureId() != null) {
 
-            Capture capture = captureRepository
-                    .findByIdAndUserId(
-                            request.getCaptureId(),
-                            userId
-                    )
-                    .orElseThrow(() ->
-                            new CaptureNotFoundException(
-                                    "Capture not found"
+            Capture capture =
+                    captureRepository
+                            .findByIdAndUserId(
+                                    request.getCaptureId(),
+                                    userId
                             )
-                    );
+                            .orElseThrow(() ->
+                                    new CaptureNotFoundException(
+                                            "Capture not found"
+                                    )
+                            );
 
             task.setCapture(capture);
         }
 
         if (request.getGoalId() != null) {
 
-            Goal goal = goalRepository
-                    .findByIdAndUserId(
-                            request.getGoalId(),
-                            userId
-                    )
-                    .orElseThrow(() ->
-                            new GoalNotFoundException(
-                                    "Goal not found"
+            Goal goal =
+                    goalRepository
+                            .findByIdAndUserId(
+                                    request.getGoalId(),
+                                    userId
                             )
-                    );
+                            .orElseThrow(() ->
+                                    new GoalNotFoundException(
+                                            "Goal not found"
+                                    )
+                            );
 
             task.setGoal(goal);
         }
 
-        Task savedTask = taskRepository.save(task);
+        Task savedTask =
+                taskRepository.save(task);
 
-        return taskMapper.toResponse(savedTask);
+        return taskMapper.toResponse(
+                savedTask
+        );
     }
 
     @Transactional(readOnly = true)
-    public List<TaskResponse> getMyTasks(UUID userId) {
+    public List<TaskResponse> getMyTasks(
+            UUID userId
+    ) {
 
-        return taskRepository.findByUserId(userId)
+        return taskRepository
+                .findByUserId(userId)
                 .stream()
                 .map(taskMapper::toResponse)
                 .toList();
@@ -115,15 +128,26 @@ public class TaskService {
             UUID userId
     ) {
 
-        Task task = taskRepository
-                .findByIdAndUserId(
-                        taskId,
-                        userId
-                )
-                .orElseThrow(() ->
-                        new TaskNotFoundException(
-                                "Task not found"
+        Task task =
+                taskRepository
+                        .findByIdAndUserId(
+                                taskId,
+                                userId
                         )
+                        .orElseThrow(() ->
+                                new TaskNotFoundException(
+                                        "Task not found"
+                                )
+                        );
+
+        /*
+         * Remove all notifications belonging
+         * to this task before deleting it.
+         */
+        notificationService
+                .deleteNotificationsForTask(
+                        userId,
+                        taskId
                 );
 
         taskRepository.delete(task);
@@ -135,18 +159,21 @@ public class TaskService {
             UUID userId
     ) {
 
-        Task task = taskRepository
-                .findByIdAndUserId(
-                        taskId,
-                        userId
-                )
-                .orElseThrow(() ->
-                        new TaskNotFoundException(
-                                "Task not found"
+        Task task =
+                taskRepository
+                        .findByIdAndUserId(
+                                taskId,
+                                userId
                         )
-                );
+                        .orElseThrow(() ->
+                                new TaskNotFoundException(
+                                        "Task not found"
+                                )
+                        );
 
-        return taskMapper.toResponse(task);
+        return taskMapper.toResponse(
+                task
+        );
     }
 
     public TaskResponse updateTask(
@@ -155,46 +182,70 @@ public class TaskService {
             UpdateTaskRequest request
     ) {
 
-        Task task = taskRepository
-                .findByIdAndUserId(
-                        taskId,
-                        userId
-                )
-                .orElseThrow(() ->
-                        new TaskNotFoundException(
-                                "Task not found"
+        Task task =
+                taskRepository
+                        .findByIdAndUserId(
+                                taskId,
+                                userId
                         )
-                );
+                        .orElseThrow(() ->
+                                new TaskNotFoundException(
+                                        "Task not found"
+                                )
+                        );
 
         if (request.getTitle() != null) {
-            task.setTitle(request.getTitle());
+
+            task.setTitle(
+                    request.getTitle()
+            );
         }
 
         if (request.getDescription() != null) {
+
             task.setDescription(
                     request.getDescription()
             );
         }
 
         if (request.getStatus() != null) {
+
             task.setStatus(
                     request.getStatus()
             );
+
+            /*
+             * Once a task is completed,
+             * future task-start reminders are
+             * no longer relevant.
+             */
+            if (request.getStatus() ==
+                    TaskStatus.COMPLETED) {
+
+                notificationService
+                        .removePendingNotificationsForCompletedTask(
+                                userId,
+                                taskId
+                        );
+            }
         }
 
         if (request.getPriority() != null) {
+
             task.setPriority(
                     request.getPriority()
             );
         }
 
         if (request.getDueDate() != null) {
+
             task.setDueDate(
                     request.getDueDate()
             );
         }
 
         if (request.getEstimatedMinutes() != null) {
+
             task.setEstimatedMinutes(
                     request.getEstimatedMinutes()
             );
@@ -204,24 +255,26 @@ public class TaskService {
          * Assign task to a goal.
          *
          * The goal is searched using both:
-         *   1. goalId
-         *   2. authenticated userId
+         *
+         * 1. goalId
+         * 2. authenticated userId
          *
          * This prevents a user from assigning
          * their task to another user's goal.
          */
         if (request.getGoalId() != null) {
 
-            Goal goal = goalRepository
-                    .findByIdAndUserId(
-                            request.getGoalId(),
-                            userId
-                    )
-                    .orElseThrow(() ->
-                            new GoalNotFoundException(
-                                    "Goal not found"
+            Goal goal =
+                    goalRepository
+                            .findByIdAndUserId(
+                                    request.getGoalId(),
+                                    userId
                             )
-                    );
+                            .orElseThrow(() ->
+                                    new GoalNotFoundException(
+                                            "Goal not found"
+                                    )
+                            );
 
             task.setGoal(goal);
         }
@@ -246,16 +299,17 @@ public class TaskService {
             UUID userId
     ) {
 
-        Task task = taskRepository
-                .findByIdAndUserId(
-                        taskId,
-                        userId
-                )
-                .orElseThrow(() ->
-                        new TaskNotFoundException(
-                                "Task not found"
+        Task task =
+                taskRepository
+                        .findByIdAndUserId(
+                                taskId,
+                                userId
                         )
-                );
+                        .orElseThrow(() ->
+                                new TaskNotFoundException(
+                                        "Task not found"
+                                )
+                        );
 
         task.setGoal(null);
 
@@ -268,16 +322,17 @@ public class TaskService {
             UUID userId
     ) {
 
-        Capture capture = captureRepository
-                .findByIdAndUserId(
-                        captureId,
-                        userId
-                )
-                .orElseThrow(() ->
-                        new CaptureNotFoundException(
-                                "Capture not found"
+        Capture capture =
+                captureRepository
+                        .findByIdAndUserId(
+                                captureId,
+                                userId
                         )
-                );
+                        .orElseThrow(() ->
+                                new CaptureNotFoundException(
+                                        "Capture not found"
+                                )
+                        );
 
         return taskRepository
                 .findByCaptureIdAndUserId(
@@ -295,25 +350,30 @@ public class TaskService {
             UUID captureId
     ) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new UserNotFoundException(
-                                "User not found"
-                        )
-                );
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() ->
+                                new UserNotFoundException(
+                                        "User not found"
+                                )
+                        );
 
-        Capture capture = captureRepository
-                .findByIdAndUserId(
-                        captureId,
-                        userId
-                )
-                .orElseThrow(() ->
-                        new CaptureNotFoundException(
-                                "Capture not found"
+        Capture capture =
+                captureRepository
+                        .findByIdAndUserId(
+                                captureId,
+                                userId
                         )
-                );
+                        .orElseThrow(() ->
+                                new CaptureNotFoundException(
+                                        "Capture not found"
+                                )
+                        );
 
-        // Check whether AI tasks already exist
+        /*
+         * Check whether AI tasks already exist.
+         */
         List<Task> existingAiTasks =
                 taskRepository
                         .findByCaptureIdAndUserIdAndAiGeneratedTrue(
@@ -321,7 +381,9 @@ public class TaskService {
                                 userId
                         );
 
-        // Prevent duplicate AI-generated tasks
+        /*
+         * Prevent duplicate AI-generated tasks.
+         */
         if (!existingAiTasks.isEmpty()) {
 
             return existingAiTasks
@@ -330,12 +392,15 @@ public class TaskService {
                     .toList();
         }
 
-        // Create new AI-generated tasks
+        /*
+         * Create new AI-generated tasks.
+         */
         return analysis.tasks()
                 .stream()
                 .map(suggestion -> {
 
-                    Task task = new Task();
+                    Task task =
+                            new Task();
 
                     task.setTitle(
                             suggestion.title()
@@ -353,7 +418,9 @@ public class TaskService {
                             TaskStatus.TODO
                     );
 
-                    // Use priority suggested by AI
+                    /*
+                     * Use priority suggested by AI.
+                     */
                     task.setPriority(
                             suggestion.priority()
                     );
@@ -361,10 +428,14 @@ public class TaskService {
                     task.setUser(user);
                     task.setCapture(capture);
 
-                    // AI-generated task
+                    /*
+                     * Mark this task as AI-generated.
+                     */
                     task.setAiGenerated(true);
 
-                    return taskRepository.save(task);
+                    return taskRepository.save(
+                            task
+                    );
                 })
                 .map(taskMapper::toResponse)
                 .toList();
