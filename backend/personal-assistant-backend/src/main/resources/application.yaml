@@ -12,6 +12,11 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
 server:
   port: 8080
 
@@ -22,3 +27,6 @@ aws:
   region: ${AWS_REGION:ap-south-1}
   s3:
     bucket: ${AWS_S3_BUCKET}
+
+openai:
+  api-key: ${OPENAI_API_KEY}

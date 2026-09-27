@@ -414,6 +414,13 @@ public class TaskService {
                             suggestion.estimatedMinutes()
                     );
 
+                    /*
+                     * Persist the date understood by AI.
+                     */
+                    task.setDueDate(
+                            suggestion.dueDate()
+                    );
+
                     task.setStatus(
                             TaskStatus.TODO
                     );

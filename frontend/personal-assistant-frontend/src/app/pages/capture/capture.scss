@@ -880,3 +880,292 @@ display: block;
   }
 
 }
+
+/* Voice recorder */
+
+.voice-recorder-card {
+  min-height: 300px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  gap: 20px;
+
+  padding: 30px;
+
+  border: 1px dashed var(--border);
+
+  border-radius: var(--radius-lg);
+
+  background: var(--bg-primary);
+
+  text-align: center;
+}
+
+.voice-empty {
+  display: flex;
+
+  align-items: center;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.voice-icon {
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+
+  place-items: center;
+
+  margin-bottom: 8px;
+
+  border-radius: 16px;
+
+  background: var(--accent-soft);
+
+  color: var(--accent);
+
+  font-size: 23px;
+}
+
+.voice-empty strong,
+.recording-state strong {
+  color: var(--text-primary);
+
+  font-size: 15px;
+}
+
+.voice-empty > span {
+  max-width: 470px;
+
+  color: var(--text-muted);
+
+  font-size: 11px;
+
+  line-height: 1.6;
+}
+
+.voice-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 12px;
+}
+
+.record-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  min-width: 145px;
+
+  padding: 10px 15px;
+
+  border: 0;
+
+  border-radius: var(--radius-md);
+
+  background: var(--accent);
+
+  color: white;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background var(--transition),
+    transform var(--transition);
+}
+
+.record-button:hover {
+  background: var(--accent-hover);
+
+  transform: translateY(-1px);
+}
+
+.record-button.stop {
+  background: var(--danger);
+}
+
+.record-button.stop:hover {
+  background: var(--danger);
+}
+
+.record-dot {
+  width: 9px;
+
+  height: 9px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+}
+
+.recording-state {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+}
+
+.recording-state > div:last-child {
+  display: flex;
+
+  align-items: flex-start;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.recording-state span {
+  color: var(--text-muted);
+
+  font-size: 12px;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.recording-pulse {
+  width: 14px;
+
+  height: 14px;
+
+  border-radius: 50%;
+
+  background: var(--danger);
+
+  box-shadow:
+    0 0 0 0 rgba(239, 71, 111, 0.35);
+
+  animation:
+    recording-pulse 1.4s infinite;
+}
+
+@keyframes recording-pulse {
+
+  70% {
+    box-shadow:
+      0 0 0 12px rgba(239, 71, 111, 0);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(239, 71, 111, 0);
+  }
+}
+
+.voice-preview {
+  width: min(100%, 520px);
+
+  display: flex;
+
+  align-items: center;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.voice-preview audio {
+  width: 100%;
+}
+
+.voice-preview span {
+  color: var(--text-muted);
+
+  font-size: 10px;
+}
+
+
+/* Mobile */
+
+@media (max-width: 500px) {
+
+  .voice-actions {
+    width: 100%;
+
+    flex-direction: column;
+  }
+
+  .voice-actions .record-button,
+  .voice-actions .remove-image-button {
+    width: 100%;
+  }
+}
+
+/* Instagram Reel detection */
+
+.url-detected-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+
+  margin-top: 14px;
+
+  padding: 14px 16px;
+
+  border: 1px solid var(--accent);
+
+  border-radius: var(--radius-md);
+
+  background: var(--accent-soft);
+}
+
+.url-detected-icon {
+  width: 32px;
+  height: 32px;
+
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 auto;
+
+  border-radius: 8px;
+
+  background: var(--surface);
+
+  color: var(--accent);
+
+  font-size: 18px;
+}
+
+.url-detected-card div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.url-detected-card strong {
+  color: var(--text-primary);
+
+  font-size: 12px;
+}
+
+.url-detected-card span {
+  color: var(--text-secondary);
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}

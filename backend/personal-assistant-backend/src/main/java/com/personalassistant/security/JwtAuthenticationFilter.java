@@ -14,11 +14,14 @@ import java.io.IOException;
 import java.util.Collections;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter
+        extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService
+    ) {
         this.jwtService = jwtService;
     }
 
@@ -32,18 +35,61 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authorizationHeader =
                 request.getHeader("Authorization");
 
-        if (authorizationHeader == null ||
-                !authorizationHeader.startsWith("Bearer ")) {
+        System.out.println(
+                "[JWT FILTER] "
+                        + request.getMethod()
+                        + " "
+                        + request.getRequestURI()
+                        + " | Authorization: "
+                        + (
+                        authorizationHeader != null
+                                ? "PRESENT"
+                                : "MISSING"
+                )
+        );
 
-            filterChain.doFilter(request, response);
+        if (
+                authorizationHeader == null
+                        || !authorizationHeader
+                        .startsWith("Bearer ")
+        ) {
+
+            System.out.println(
+                    "[JWT FILTER] No Bearer token"
+            );
+
+            filterChain.doFilter(
+                    request,
+                    response
+            );
+
             return;
         }
 
-        String token = authorizationHeader.substring(7);
+        String token =
+                authorizationHeader.substring(7);
 
-        if (!jwtService.isTokenValid(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
+        boolean valid =
+                jwtService.isTokenValid(token);
+
+        System.out.println(
+                "[JWT FILTER] Token valid: "
+                        + valid
+        );
+
+        if (!valid) {
+
+            System.out.println(
+                    "[JWT FILTER] REJECTING REQUEST - INVALID TOKEN"
+            );
+
+            response.setStatus(
+                    HttpServletResponse.SC_UNAUTHORIZED
+            );
+
+            response.setContentType(
+                    "application/json"
+            );
 
             response.getWriter().write("""
             {
@@ -55,7 +101,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String userId = jwtService.extractUserId(token);
+        String userId =
+                jwtService.extractUserId(token);
+
+        System.out.println(
+                "[JWT FILTER] Authenticated user: "
+                        + userId
+        );
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
@@ -64,9 +116,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         Collections.emptyList()
                 );
 
-        SecurityContextHolder.getContext()
+        SecurityContextHolder
+                .getContext()
                 .setAuthentication(authentication);
 
-        filterChain.doFilter(request, response);
+        System.out.println(
+                "[JWT FILTER] SecurityContext authentication set"
+        );
+
+        filterChain.doFilter(
+                request,
+                response
+        );
     }
 }

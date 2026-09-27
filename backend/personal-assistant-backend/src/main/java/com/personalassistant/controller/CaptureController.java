@@ -20,18 +20,28 @@ public class CaptureController {
 
     private final CaptureService captureService;
 
-    public CaptureController(CaptureService captureService) {
-        this.captureService = captureService;
+    public CaptureController(
+            CaptureService captureService
+    ) {
+
+        this.captureService =
+                captureService;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CaptureResponse createCapture(
-            @Valid @RequestBody CreateCaptureRequest request,
+            @Valid
+            @RequestBody
+            CreateCaptureRequest request,
+
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
         return captureService.createCapture(
                 request,
@@ -45,14 +55,54 @@ public class CaptureController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public CaptureResponse createImageCapture(
-            @RequestPart("file") MultipartFile file,
-            @RequestPart(value = "content", required = false) String content,
+            @RequestPart("file")
+            MultipartFile file,
+
+            @RequestPart(
+                    value = "content",
+                    required = false
+            )
+            String content,
+
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
         return captureService.createImageCapture(
+                file,
+                content,
+                userId
+        );
+    }
+
+    @PostMapping(
+            value = "/voice",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    public CaptureResponse createVoiceCapture(
+            @RequestPart("file")
+            MultipartFile file,
+
+            @RequestPart(
+                    value = "content",
+                    required = false
+            )
+            String content,
+
+            Authentication authentication
+    ) {
+
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
+
+        return captureService.createVoiceCapture(
                 file,
                 content,
                 userId
@@ -64,18 +114,27 @@ public class CaptureController {
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
-        return captureService.getMyCaptures(userId);
+        return captureService.getMyCaptures(
+                userId
+        );
     }
 
     @GetMapping("/{captureId}")
     public CaptureResponse getCapture(
             @PathVariable UUID captureId,
+
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
         return captureService.getCapture(
                 captureId,
@@ -87,10 +146,14 @@ public class CaptureController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCapture(
             @PathVariable UUID captureId,
+
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
         captureService.deleteCapture(
                 captureId,
@@ -101,10 +164,14 @@ public class CaptureController {
     @PostMapping("/{captureId}/retry-ai")
     public ResponseEntity<CaptureResponse> retryAi(
             @PathVariable UUID captureId,
+
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
         CaptureResponse response =
                 captureService.retryAiProcessing(
@@ -112,6 +179,8 @@ public class CaptureController {
                         userId
                 );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                response
+        );
     }
 }

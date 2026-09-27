@@ -1,6 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {
+  HttpClient
+} from '@angular/common/http';
+
+import {
+  Observable
+} from 'rxjs';
 
 export type CaptureType =
   | 'TEXT'
@@ -9,22 +14,40 @@ export type CaptureType =
   | 'VOICE';
 
 export interface CreateCaptureRequest {
+
   type: CaptureType;
+
   content?: string;
+
   sourceUrl?: string;
 }
 
 export interface CaptureResponse {
+
   id: string;
+
   type: CaptureType;
+
   content: string | null;
+
   sourceUrl: string | null;
+
   storageUrl: string | null;
+
   transcript: string | null;
-  aiStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+  aiStatus:
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED';
+
   aiError: string | null;
+
   aiSummary: string | null;
+
   createdAt: string;
+
   updatedAt: string;
 }
 
@@ -33,7 +56,8 @@ export interface CaptureResponse {
 })
 export class CaptureService {
 
-  private readonly http = inject(HttpClient);
+  private readonly http =
+    inject(HttpClient);
 
   private readonly baseUrl =
     'http://localhost:8080/api/captures';
@@ -53,7 +77,8 @@ export class CaptureService {
     content?: string
   ): Observable<CaptureResponse> {
 
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
     formData.append(
       'file',
@@ -61,7 +86,10 @@ export class CaptureService {
       file.name
     );
 
-    if (content?.trim()) {
+    if (
+      content?.trim()
+    ) {
+
       formData.append(
         'content',
         content.trim()
@@ -70,6 +98,36 @@ export class CaptureService {
 
     return this.http.post<CaptureResponse>(
       `${this.baseUrl}/image`,
+      formData
+    );
+  }
+
+  createVoiceCapture(
+    file: File,
+    content?: string
+  ): Observable<CaptureResponse> {
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      'file',
+      file,
+      file.name
+    );
+
+    if (
+      content?.trim()
+    ) {
+
+      formData.append(
+        'content',
+        content.trim()
+      );
+    }
+
+    return this.http.post<CaptureResponse>(
+      `${this.baseUrl}/voice`,
       formData
     );
   }

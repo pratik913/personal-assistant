@@ -17,6 +17,14 @@ export const authInterceptor: HttpInterceptorFn = (
     localStorage.getItem('access_token') ??
     sessionStorage.getItem('access_token');
 
+  console.log(
+    '[AUTH INTERCEPTOR]',
+    req.method,
+    req.url,
+    'TOKEN:',
+    token ? 'PRESENT' : 'MISSING'
+  );
+
   const authenticatedRequest = token
     ? req.clone({
         setHeaders: {
@@ -25,29 +33,26 @@ export const authInterceptor: HttpInterceptorFn = (
       })
     : req;
 
+  console.log(
+    '[AUTH INTERCEPTOR]',
+    'Authorization:',
+    authenticatedRequest.headers.has('Authorization')
+      ? 'ATTACHED'
+      : 'NOT ATTACHED'
+  );
+
   return next(authenticatedRequest).pipe(
+    catchError((error: HttpErrorResponse) => {
 
-    catchError(
-      (error: HttpErrorResponse) => {
-
-        if (
-          error.status === 401 &&
-          token
-        ) {
-
-          localStorage.removeItem(
-            'access_token'
-          );
-
-          sessionStorage.removeItem(
-            'access_token'
-          );
-        }
-
-        return throwError(
-          () => error
-        );
+      if (
+        error.status === 401 &&
+        token
+      ) {
+        localStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token');
       }
-    )
+
+      return throwError(() => error);
+    })
   );
 };

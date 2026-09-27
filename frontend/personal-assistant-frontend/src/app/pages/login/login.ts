@@ -1,5 +1,6 @@
 import {
-  Component
+  Component,
+  inject
 } from '@angular/core';
 
 import {
@@ -16,29 +17,40 @@ import {
 
 @Component({
   selector: 'app-login',
+
   standalone: true,
-  imports: [FormsModule],
+
+  imports: [
+    FormsModule
+  ],
+
   templateUrl: './login.html',
+
   styleUrl: './login.scss'
 })
 export class LoginComponent {
+
+  private readonly router =
+    inject(Router);
+
+  private readonly authService =
+    inject(AuthService);
 
   email = '';
 
   password = '';
 
-  showPassword = false;
+  showPassword =
+    false;
 
-  rememberMe = true;
+  rememberMe =
+    true;
 
-  isSubmitting = false;
+  isSubmitting =
+    false;
 
-  errorMessage = '';
-
-  constructor(
-    private readonly router: Router,
-    private readonly authService: AuthService
-  ) {}
+  errorMessage =
+    '';
 
   togglePassword(): void {
 
@@ -48,23 +60,16 @@ export class LoginComponent {
 
   login(): void {
 
-    this.errorMessage = '';
+    this.errorMessage =
+      '';
 
-    const trimmedEmail =
-      this.email.trim().toLowerCase();
+    const email =
+      this.email.trim();
 
-    if (!trimmedEmail) {
+    if (!email) {
 
       this.errorMessage =
         'Please enter your email.';
-
-      return;
-    }
-
-    if (!this.isValidEmail(trimmedEmail)) {
-
-      this.errorMessage =
-        'Please enter a valid email address.';
 
       return;
     }
@@ -77,44 +82,77 @@ export class LoginComponent {
       return;
     }
 
-    this.isSubmitting = true;
+    this.isSubmitting =
+      true;
 
     this.authService
       .login({
-        email: trimmedEmail,
-        password: this.password
+        email,
+        password:
+          this.password
       })
       .subscribe({
 
-        next: response => {
+        next: (
+          response
+        ) => {
 
-          /*
-           * AuthService stores the token by default.
-           *
-           * Respect the Remember Me choice by moving
-           * the token to sessionStorage when requested.
-           */
-          this.authService.storeToken(
-            response.token,
-            this.rememberMe
+          console.log(
+            'Login successful'
           );
 
-          this.isSubmitting = false;
+          /*
+           * AuthService has already stored
+           * the JWT in localStorage.
+           *
+           * Now we can safely enter the
+           * authenticated application.
+           */
+
+          this.isSubmitting =
+            false;
 
           this.router.navigate([
             '/dashboard'
           ]);
         },
 
-        error: error => {
+        error: (
+          error
+        ) => {
 
-          this.isSubmitting = false;
+          console.error(
+            'LOGIN ERROR:',
+            error
+          );
+
+          this.isSubmitting =
+            false;
+
+          if (
+            error.status === 401
+          ) {
+
+            this.errorMessage =
+              'Invalid email or password.';
+
+            return;
+          }
+
+          if (
+            error.status === 400
+          ) {
+
+            this.errorMessage =
+              error.error?.message
+              ??
+              'Please check your login details.';
+
+            return;
+          }
 
           this.errorMessage =
-            this.authService.getErrorMessage(
-              error,
-              'Unable to sign in. Please try again.'
-            );
+            'Unable to log in right now. Please try again.';
         }
       });
   }
@@ -137,13 +175,5 @@ export class LoginComponent {
 
     this.errorMessage =
       'Password recovery will be added in a later authentication milestone.';
-  }
-
-  private isValidEmail(
-    email: string
-  ): boolean {
-
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(email);
   }
 }

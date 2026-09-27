@@ -14,7 +14,7 @@
 
       <p class="subtitle">
         Capture anything you don't want to forget.
-        MindMate will turn it into something actionable.
+        MindMate will understand it and turn actionable intent into tasks.
       </p>
 
     </div>
@@ -26,7 +26,7 @@
 
     <div class="capture-tabs">
 
-      <!-- TEXT -->
+      <!-- THOUGHT -->
 
       <button
         type="button"
@@ -46,7 +46,7 @@
       </button>
 
 
-      <!-- URL -->
+      <!-- LINK -->
 
       <button
         type="button"
@@ -60,13 +60,13 @@
 
         <span>
           <strong>Link</strong>
-          <small>Save a resource</small>
+          <small>Article / Reel</small>
         </span>
 
       </button>
 
 
-      <!-- IMAGE -->
+      <!-- SCREENSHOT -->
 
       <button
         type="button"
@@ -80,7 +80,7 @@
 
         <span>
           <strong>Screenshot</strong>
-          <small>Save an image</small>
+          <small>Image understanding</small>
         </span>
 
       </button>
@@ -100,7 +100,7 @@
 
         <span>
           <strong>Voice</strong>
-          <small>Coming next</small>
+          <small>Record a note</small>
         </span>
 
       </button>
@@ -157,11 +157,38 @@
           id="sourceUrl"
           type="url"
           [(ngModel)]="sourceUrl"
+          (ngModelChange)="onUrlChanged()"
           placeholder="https://example.com/article">
 
-        <span class="field-hint">
-          Paste a tutorial, article, video, resource, or Instagram Reel.
-        </span>
+        @if (isInstagramUrl) {
+
+          <div class="url-detected-card">
+
+            <span class="url-detected-icon">
+              ◎
+            </span>
+
+            <div>
+
+              <strong>
+                Instagram Reel detected
+              </strong>
+
+              <span>
+                Tell MindMate what you want to do with this Reel.
+              </span>
+
+            </div>
+
+          </div>
+
+        } @else {
+
+          <span class="field-hint">
+            Paste a tutorial, article, video, resource, or Instagram Reel.
+          </span>
+
+        }
 
       </div>
 
@@ -170,7 +197,15 @@
 
         <label for="urlContext">
 
-          What do you want to do with it?
+          @if (isInstagramUrl) {
+
+            What do you want to do with this Reel?
+
+          } @else {
+
+            What do you want to do with it?
+
+          }
 
           <span>
             Optional
@@ -183,15 +218,37 @@
           [(ngModel)]="content"
           rows="5"
           maxlength="5000"
-          placeholder="Example: I want to learn the concepts covered in this tutorial...">
+          placeholder="Example: I want to try this workout tomorrow morning...">
         </textarea>
+
+        <div class="input-footer">
+
+          <span>
+
+            @if (isInstagramUrl) {
+
+              MindMate uses your description because Reel content may not be publicly accessible.
+
+            } @else {
+
+              Add context so MindMate understands your intention.
+
+            }
+
+          </span>
+
+          <span>
+            {{ content.length }} / 5000
+          </span>
+
+        </div>
 
       </div>
 
     }
 
 
-    <!-- IMAGE -->
+    <!-- SCREENSHOT -->
 
     @if (captureType === 'IMAGE') {
 
@@ -308,27 +365,152 @@
 
     @if (captureType === 'VOICE') {
 
-      <div class="coming-soon-card">
+      <div class="capture-input-section">
 
-        <div class="coming-soon-icon">
-          ◉
+        <label>
+          Voice note
+        </label>
+
+        <div class="voice-recorder-card">
+
+          @if (isRecording) {
+
+            <div class="recording-state">
+
+              <div class="recording-pulse"></div>
+
+              <div>
+
+                <strong>
+                  Recording...
+                </strong>
+
+                <span>
+                  {{ formatRecordingTime(recordingSeconds) }}
+                </span>
+
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              class="record-button stop"
+              (click)="stopRecording()">
+
+              <span class="record-dot"></span>
+
+              Stop recording
+
+            </button>
+
+          } @else {
+
+            <div class="voice-empty">
+
+              <div class="voice-icon">
+                ◉
+              </div>
+
+              <strong>
+
+                @if (voiceFile) {
+                  Voice note ready
+                } @else {
+                  Record a voice note
+                }
+
+              </strong>
+
+              <span>
+                Speak naturally. MindMate will transcribe it and understand the action.
+              </span>
+
+              <div class="voice-actions">
+
+                <button
+                  type="button"
+                  class="record-button"
+                  (click)="startRecording()">
+
+                  <span class="record-dot"></span>
+
+                  {{ voiceFile ? 'Record again' : 'Start recording' }}
+
+                </button>
+
+                @if (voiceFile) {
+
+                  <button
+                    type="button"
+                    class="remove-image-button"
+                    (click)="clearVoiceRecording()">
+
+                    Remove recording
+
+                  </button>
+
+                }
+
+              </div>
+
+            </div>
+
+          }
+
+
+          @if (
+            voicePreviewUrl
+            && !isRecording
+          ) {
+
+            <div class="voice-preview">
+
+              <audio
+                controls
+                [src]="voicePreviewUrl">
+              </audio>
+
+              <span>
+                {{ formatRecordingTime(recordingSeconds) }}
+                · Ready to analyze
+              </span>
+
+            </div>
+
+          }
+
         </div>
 
-        <h2>
-          Voice capture is coming next
-        </h2>
+      </div>
 
-        <p>
-          Soon you'll be able to record a voice note and
-          MindMate will turn it into actionable tasks.
-        </p>
+
+      <div class="capture-input-section context-section">
+
+        <label for="voiceContext">
+
+          Add context for MindMate
+
+          <span>
+            Optional
+          </span>
+
+        </label>
+
+        <textarea
+          id="voiceContext"
+          [(ngModel)]="content"
+          rows="4"
+          maxlength="5000"
+          placeholder="Example: This is about my system design preparation...">
+        </textarea>
 
       </div>
 
     }
 
 
-    <!-- Actions -->
+    <!-- ACTIONS -->
 
     <div class="capture-actions">
 
@@ -339,13 +521,25 @@
         </span>
 
         <span>
+
           @if (captureType === 'IMAGE') {
-            Your screenshot will be securely stored in MindMate.
+
+            Screenshot → S3 → vision AI → actionable tasks.
+
           } @else if (captureType === 'VOICE') {
-            Voice capture will be available in the next step.
+
+            Voice → S3 → transcription → AI → actionable tasks.
+
+          } @else if (captureType === 'URL') {
+
+            URL + your context → AI → actionable tasks.
+
           } @else {
-            AI will understand your capture and create actionable tasks.
+
+            Your thought → AI → actionable tasks.
+
           }
+
         </span>
 
       </div>
@@ -354,7 +548,7 @@
       <button
         type="button"
         class="analyze-button"
-        [disabled]="isSubmitting || captureType === 'VOICE'"
+        [disabled]="isSubmitting || isRecording"
         (click)="submitCapture()">
 
         @if (isSubmitting) {
@@ -362,17 +556,13 @@
           <span class="spinner"></span>
 
           <span>
-            Uploading...
+            Processing...
           </span>
 
         } @else {
 
           <span>
-            @if (captureType === 'IMAGE') {
-              Save Screenshot
-            } @else {
-              Analyze with AI
-            }
+            {{ getSubmitLabel() }}
           </span>
 
           <span class="button-arrow">
@@ -388,7 +578,7 @@
   </section>
 
 
-  <!-- Error -->
+  <!-- ERROR -->
 
   @if (errorMessage) {
 
@@ -415,7 +605,7 @@
   }
 
 
-  <!-- AI Result -->
+  <!-- RESULT -->
 
   @if (captureResult) {
 
@@ -430,11 +620,11 @@
         <div>
 
           <span class="result-label">
-            CAPTURE SAVED
+            CAPTURE PROCESSED
           </span>
 
           <h2>
-            Your screenshot is securely stored
+            {{ getResultTitle() }}
           </h2>
 
         </div>
@@ -459,6 +649,23 @@
       }
 
 
+      @if (captureResult.transcript) {
+
+        <div class="summary">
+
+          <span>
+            Transcript
+          </span>
+
+          <p>
+            {{ captureResult.transcript }}
+          </p>
+
+        </div>
+
+      }
+
+
       <div class="result-status">
 
         <span>
@@ -476,7 +683,7 @@
   }
 
 
-  <!-- Examples -->
+  <!-- EXAMPLES -->
 
   <section class="examples-section">
 
