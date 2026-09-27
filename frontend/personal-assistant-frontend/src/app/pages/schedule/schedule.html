@@ -1,1 +1,442 @@
-<p>schedule works!</p>
+<div class="schedule-page">
+
+  <header class="page-header">
+
+    <div>
+
+      <span class="eyebrow">
+        SCHEDULE
+      </span>
+
+      <h1>
+        Your time, organized.
+      </h1>
+
+      <p>
+        See what's happening and protect time for what matters.
+      </p>
+
+    </div>
+
+    <button
+      type="button"
+      class="primary-button"
+      (click)="openAddForm()"
+      [disabled]="tasks.length === 0">
+
+      <span>+</span>
+      Add task to schedule
+
+    </button>
+
+  </header>
+
+
+  @if (errorMessage) {
+
+    <div class="error-message">
+      {{ errorMessage }}
+    </div>
+
+  }
+
+
+  <section class="calendar-toolbar">
+
+    <div class="date-navigation">
+
+      <button
+        type="button"
+        class="icon-button"
+        (click)="goPreviousDay()">
+
+        ←
+
+      </button>
+
+      <button
+        type="button"
+        class="today-button"
+        (click)="goToday()">
+
+        Today
+
+      </button>
+
+      <button
+        type="button"
+        class="icon-button"
+        (click)="goNextDay()">
+
+        →
+
+      </button>
+
+      <h2>
+        {{ selectedDateLabel }}
+      </h2>
+
+    </div>
+
+
+    <input
+      type="date"
+      [(ngModel)]="selectedDate">
+
+  </section>
+
+
+  <main class="schedule-layout">
+
+    <section class="timeline-card">
+
+      <div class="timeline-header">
+
+        <div>
+
+          <span class="section-label">
+            SCHEDULE
+          </span>
+
+          <h2>
+
+            {{ selectedEvents.length }}
+
+            scheduled
+
+            {{
+              selectedEvents.length === 1
+                ? 'item'
+                : 'items'
+            }}
+
+          </h2>
+
+        </div>
+
+        <span class="timezone">
+          Local time
+        </span>
+
+      </div>
+
+
+      @if (isLoading) {
+
+        <div class="empty-state">
+
+          <div class="empty-icon">
+            ◷
+          </div>
+
+          <h3>
+            Loading your schedule...
+          </h3>
+
+          <p>
+            Fetching your tasks and scheduled time.
+          </p>
+
+        </div>
+
+      } @else if (selectedEvents.length === 0) {
+
+        <div class="empty-state">
+
+          <div class="empty-icon">
+            ◷
+          </div>
+
+          <h3>
+            Your schedule is clear.
+          </h3>
+
+          <p>
+            Schedule one of your existing tasks
+            to protect time for it.
+          </p>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="openAddForm()"
+            [disabled]="tasks.length === 0">
+
+            {{
+              tasks.length === 0
+                ? 'Create a task first'
+                : 'Schedule a task'
+            }}
+
+          </button>
+
+        </div>
+
+      } @else {
+
+        <div class="timeline">
+
+          @for (
+            event of selectedEvents;
+            track event.id
+          ) {
+
+            <article class="event-row">
+
+              <div class="event-time">
+
+                <strong>
+                  {{ event.startTime }}
+                </strong>
+
+                <span>
+                  {{ event.endTime }}
+                </span>
+
+              </div>
+
+
+              <div class="timeline-line">
+
+                <span class="timeline-dot"></span>
+
+              </div>
+
+
+              <div class="event-card">
+
+                <div class="event-card-top">
+
+                  <span class="event-type">
+                    TASK
+                  </span>
+
+                  <button
+                    type="button"
+                    class="delete-button"
+                    (click)="deleteEvent(event.id)">
+
+                    ×
+
+                  </button>
+
+                </div>
+
+                <h3>
+                  {{ event.title }}
+                </h3>
+
+                <span class="duration">
+
+                  {{ event.startTime }}
+                  –
+                  {{ event.endTime }}
+
+                </span>
+
+              </div>
+
+            </article>
+
+          }
+
+        </div>
+
+      }
+
+    </section>
+
+
+    <aside class="side-card">
+
+      <div class="side-card-icon">
+        ✦
+      </div>
+
+      <span class="section-label">
+        MINDMATE
+      </span>
+
+      <h2>
+        Protect your important time.
+      </h2>
+
+      <p>
+        Your schedule gives the planner the context
+        it needs to build realistic plans around your life.
+      </p>
+
+
+      <div class="tip">
+
+        <span>◎</span>
+
+        <div>
+
+          <strong>
+            Planning tip
+          </strong>
+
+          <p>
+            Leave some open space between important
+            commitments instead of filling every minute.
+          </p>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+  </main>
+
+
+  @if (showAddForm) {
+
+    <div
+      class="modal-backdrop"
+      (click)="closeAddForm()">
+
+      <section
+        class="modal"
+        (click)="$event.stopPropagation()">
+
+        <div class="modal-header">
+
+          <div>
+
+            <span class="eyebrow">
+              NEW SCHEDULE ENTRY
+            </span>
+
+            <h2>
+              Protect time for a task
+            </h2>
+
+          </div>
+
+          <button
+            type="button"
+            class="close-button"
+            (click)="closeAddForm()">
+
+            ×
+
+          </button>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="taskId">
+            Task
+          </label>
+
+          <select
+            id="taskId"
+            [(ngModel)]="newEvent.taskId">
+
+            @for (
+              task of tasks;
+              track task.id
+            ) {
+
+              <option
+                [value]="task.id">
+
+                {{ task.title }}
+
+              </option>
+
+            }
+
+          </select>
+
+        </div>
+
+
+        <div class="time-grid">
+
+          <div class="field">
+
+            <label for="startTime">
+              Starts
+            </label>
+
+            <input
+              id="startTime"
+              type="time"
+              [(ngModel)]="newEvent.startTime">
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="endTime">
+              Ends
+            </label>
+
+            <input
+              id="endTime"
+              type="time"
+              [(ngModel)]="newEvent.endTime">
+
+          </div>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>
+            Date
+          </label>
+
+          <input
+            type="date"
+            [(ngModel)]="selectedDate">
+
+        </div>
+
+
+        <div class="modal-actions">
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="closeAddForm()"
+            [disabled]="isSaving">
+
+            Cancel
+
+          </button>
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="addEvent()"
+            [disabled]="isSaving || !newEvent.taskId">
+
+            @if (isSaving) {
+
+              Saving...
+
+            } @else {
+
+              Add to schedule
+
+            }
+
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  }
+
+</div>

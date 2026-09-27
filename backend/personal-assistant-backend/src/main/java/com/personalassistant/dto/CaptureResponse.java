@@ -18,4 +18,5 @@ public record CaptureResponse(
         String aiSummary,
         Instant createdAt,
         Instant updatedAt
-) {}
+) {
+}

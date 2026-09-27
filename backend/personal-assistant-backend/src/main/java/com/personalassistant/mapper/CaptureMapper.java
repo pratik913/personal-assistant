@@ -30,7 +30,7 @@ public class CaptureMapper {
                 capture.getTranscript(),
                 capture.getAiStatus(),
                 capture.getAiError(),
-                capture.getAiSummary(),       // NEW
+                capture.getAiSummary(),
                 capture.getCreatedAt(),
                 capture.getUpdatedAt()
         );

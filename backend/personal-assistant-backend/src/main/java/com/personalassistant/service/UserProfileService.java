@@ -38,7 +38,6 @@ public class UserProfileService {
             UserMapper userMapper,
             S3StorageService s3StorageService
     ) {
-
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.s3StorageService = s3StorageService;
@@ -75,28 +74,47 @@ public class UserProfileService {
             );
         }
 
+        String previousPhoneNumber =
+                user.getPhoneNumber();
+
         String phoneNumber =
                 normalizePhoneNumber(
                         request.phoneNumber()
                 );
 
-        user.setName(request.name());
-        user.setEmail(request.email());
-        user.setPhoneNumber(phoneNumber);
-        user.setTimezone(request.timezone());
+        user.setName(
+                request.name().trim()
+        );
+
+        user.setEmail(
+                request.email().trim().toLowerCase()
+        );
+
+        user.setPhoneNumber(
+                phoneNumber
+        );
+
+        user.setTimezone(
+                request.timezone().trim()
+        );
 
         /*
-         * Changing the phone number invalidates
-         * previous verification.
+         * Compare the previous value with the new value
+         * BEFORE replacing the entity field.
+         *
+         * This prevents a phone-number change from
+         * incorrectly keeping the old verification state.
          */
         if (
                 !sameValue(
-                        phoneNumber,
-                        user.getPhoneNumber()
+                        previousPhoneNumber,
+                        phoneNumber
                 )
         ) {
 
-            user.setPhoneNumberVerified(false);
+            user.setPhoneNumberVerified(
+                    false
+            );
         }
 
         return userMapper.toProfileResponse(
@@ -132,7 +150,9 @@ public class UserProfileService {
                 file
         );
 
-        user.setProfileImageKey(key);
+        user.setProfileImageKey(
+                key
+        );
 
         userRepository.save(user);
 
@@ -143,20 +163,23 @@ public class UserProfileService {
 
             try {
 
-                s3StorageService.delete(oldKey);
+                s3StorageService.delete(
+                        oldKey
+                );
 
             } catch (Exception ignored) {
 
                 /*
                  * The new image is already saved.
                  * Old-object cleanup can be retried
-                 * later without failing the profile
-                 * update.
+                 * later without failing the profile update.
                  */
             }
         }
 
-        return userMapper.toProfileResponse(user);
+        return userMapper.toProfileResponse(
+                user
+        );
     }
 
     private User getUser(

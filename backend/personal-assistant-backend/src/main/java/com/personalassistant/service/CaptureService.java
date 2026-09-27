@@ -16,6 +16,7 @@ import com.personalassistant.repository.CaptureRepository;
 import com.personalassistant.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,24 +25,29 @@ import java.util.UUID;
 @Transactional
 public class CaptureService {
 
+    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
     private final CaptureRepository captureRepository;
     private final UserRepository userRepository;
     private final CaptureMapper captureMapper;
     private final AiService aiService;
     private final TaskService taskService;
+    private final S3StorageService s3StorageService;
 
     public CaptureService(
             CaptureRepository captureRepository,
             UserRepository userRepository,
             CaptureMapper captureMapper,
             AiService aiService,
-            TaskService taskService
+            TaskService taskService,
+            S3StorageService s3StorageService
     ) {
         this.captureRepository = captureRepository;
         this.userRepository = userRepository;
         this.captureMapper = captureMapper;
         this.aiService = aiService;
         this.taskService = taskService;
+        this.s3StorageService = s3StorageService;
     }
 
     public CaptureResponse createCapture(
@@ -74,7 +80,6 @@ public class CaptureService {
 
             analysis = aiService.analyzeCapture(aiInput);
 
-            // Store AI-generated summary
             savedCapture.setAiSummary(analysis.summary());
 
         } catch (AiProcessingException exception) {
@@ -99,6 +104,68 @@ public class CaptureService {
         captureRepository.save(savedCapture);
 
         return captureMapper.toResponse(savedCapture);
+    }
+
+    /**
+     * Creates an IMAGE capture and uploads the image to private S3 storage.
+     *
+     * AI vision processing is intentionally not performed yet.
+     * That will be implemented in the next step.
+     */
+    public CaptureResponse createImageCapture(
+            MultipartFile file,
+            String content,
+            UUID userId
+    ) {
+
+        validateImage(file);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found")
+                );
+
+        Capture capture = new Capture();
+
+        capture.setType(CaptureType.IMAGE);
+        capture.setContent(
+                content != null && !content.isBlank()
+                        ? content.trim()
+                        : null
+        );
+        capture.setUser(user);
+        capture.setAiStatus(AiProcessingStatus.PENDING);
+
+        Capture savedCapture = captureRepository.save(capture);
+
+        String extension = getImageExtension(file);
+        String key = "captures/" + userId + "/" + savedCapture.getId()
+                + "/screenshot." + extension;
+
+        try {
+
+            s3StorageService.upload(key, file);
+
+            savedCapture.setStorageUrl(key);
+
+            savedCapture.setAiStatus(AiProcessingStatus.PENDING);
+            savedCapture.setAiError(null);
+
+            captureRepository.save(savedCapture);
+
+            return captureMapper.toResponse(savedCapture);
+
+        } catch (RuntimeException exception) {
+
+            savedCapture.setAiStatus(AiProcessingStatus.FAILED);
+            savedCapture.setAiError(
+                    "Screenshot upload failed. Please try again."
+            );
+
+            captureRepository.save(savedCapture);
+
+            throw exception;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +222,6 @@ public class CaptureService {
 
             analysis = aiService.analyzeCapture(aiInput);
 
-            // Store AI-generated summary after retry
             capture.setAiSummary(analysis.summary());
 
         } catch (AiProcessingException exception) {
@@ -192,6 +258,17 @@ public class CaptureService {
                 .orElseThrow(() ->
                         new CaptureNotFoundException("Capture not found")
                 );
+
+        if (capture.getStorageUrl() != null
+                && !capture.getStorageUrl().isBlank()) {
+
+            try {
+                s3StorageService.delete(capture.getStorageUrl());
+            } catch (RuntimeException exception) {
+                // Keep database deletion independent from S3 cleanup.
+                // The object can be cleaned up separately if required.
+            }
+        }
 
         captureRepository.delete(capture);
     }
@@ -231,7 +308,7 @@ public class CaptureService {
 
             case IMAGE ->
                     throw new IllegalArgumentException(
-                            "Image capture is not supported yet"
+                            "Use the image upload endpoint for IMAGE captures"
                     );
         }
     }
@@ -262,6 +339,47 @@ public class CaptureService {
                     throw new UnsupportedOperationException(
                             "Image AI analysis is not implemented yet"
                     );
+        };
+    }
+
+    private void validateImage(MultipartFile file) {
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Screenshot file is required."
+            );
+        }
+
+        if (file.getSize() > MAX_IMAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "Screenshot must not exceed 5 MB."
+            );
+        }
+
+        String contentType = file.getContentType();
+
+        if (contentType == null
+                || !contentType.equalsIgnoreCase("image/jpeg")
+                && !contentType.equalsIgnoreCase("image/png")
+                && !contentType.equalsIgnoreCase("image/webp")) {
+
+            throw new IllegalArgumentException(
+                    "Only JPG, PNG, and WebP screenshots are supported."
+            );
+        }
+    }
+
+    private String getImageExtension(MultipartFile file) {
+
+        String contentType = file.getContentType();
+
+        return switch (contentType == null ? "" : contentType.toLowerCase()) {
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            case "image/jpeg" -> "jpg";
+            default -> throw new IllegalArgumentException(
+                    "Unsupported image type."
+            );
         };
     }
 }

@@ -1,1 +1,475 @@
-<p>landing works!</p>
+<div class="landing-page">
+
+  <header class="navbar">
+
+    <button
+      type="button"
+      class="brand"
+      (click)="scrollToFeatures()">
+
+      <span class="brand-mark">✦</span>
+
+      <span>MindMate</span>
+
+    </button>
+
+    <nav class="desktop-nav">
+
+      <button
+        type="button"
+        (click)="scrollToFeatures()">
+        Features
+      </button>
+
+      <button
+        type="button"
+        (click)="scrollToHowItWorks()">
+        How it works
+      </button>
+
+      <button
+        type="button"
+        (click)="scrollToFeatures()">
+        AI Assistant
+      </button>
+
+    </nav>
+
+    <div class="nav-actions">
+
+      <button
+        type="button"
+        class="login-link"
+        (click)="goToLogin()">
+        Login
+      </button>
+
+      <button
+        type="button"
+        class="primary-button small"
+        (click)="goToRegister()">
+        Get Started
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main>
+
+    <section class="hero">
+
+      <div class="hero-content">
+
+        <div class="hero-badge">
+          <span>✦</span>
+          AI-powered personal productivity
+        </div>
+
+        <h1>
+          Your AI
+          <span>Personal Assistant</span>
+          for a Better You.
+        </h1>
+
+        <p class="hero-description">
+          Capture your thoughts, screenshots, voice notes and links.
+          MindMate understands what you mean and turns your ideas
+          into actionable progress.
+        </p>
+
+        <div class="hero-actions">
+
+          <button
+            type="button"
+            class="primary-button"
+            (click)="goToRegister()">
+
+            Get Started
+            <span>→</span>
+
+          </button>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="scrollToHowItWorks()">
+
+            <span class="play-icon">▶</span>
+            See how it works
+
+          </button>
+
+        </div>
+
+        <div class="hero-note">
+          <span>✓</span>
+          Built around your goals, schedule and real behavior.
+        </div>
+
+      </div>
+
+
+      <div class="hero-visual">
+
+        <div class="glow glow-one"></div>
+        <div class="glow glow-two"></div>
+
+        <div class="assistant-card">
+
+          <div class="assistant-top">
+
+            <div class="assistant-avatar">
+              ✦
+            </div>
+
+            <div>
+              <strong>MindMate AI</strong>
+              <span>Working on your day</span>
+            </div>
+
+            <span class="online-dot"></span>
+
+          </div>
+
+
+          <div class="assistant-message">
+
+            <span class="message-label">
+              CAPTURE UNDERSTOOD
+            </span>
+
+            <p>
+              “I want to learn Redis before my next backend project.”
+            </p>
+
+          </div>
+
+
+          <div class="ai-task-card">
+
+            <div class="task-check">
+              ✓
+            </div>
+
+            <div class="task-info">
+
+              <strong>
+                Learn Redis fundamentals
+              </strong>
+
+              <span>
+                Estimated time · 90 min
+              </span>
+
+            </div>
+
+            <span class="priority">
+              HIGH
+            </span>
+
+          </div>
+
+
+          <div class="ai-task-card second">
+
+            <div class="task-check">
+              ✓
+            </div>
+
+            <div class="task-info">
+
+              <strong>
+                Practice Redis commands
+              </strong>
+
+              <span>
+                Estimated time · 60 min
+              </span>
+
+            </div>
+
+            <span class="priority medium">
+              MEDIUM
+            </span>
+
+          </div>
+
+
+          <div class="assistant-footer">
+
+            <span>✦ AI plan ready</span>
+
+            <span>→</span>
+
+          </div>
+
+        </div>
+
+
+        <div class="floating-card capture-floating">
+          <span>📸</span>
+          Screenshot
+        </div>
+
+        <div class="floating-card voice-floating">
+          <span>🎙</span>
+          Voice note
+        </div>
+
+        <div class="floating-card link-floating">
+          <span>🔗</span>
+          Reel saved
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section
+      id="features"
+      class="features-section">
+
+      <div class="section-heading">
+
+        <span class="eyebrow">
+          EVERYTHING CONNECTED
+        </span>
+
+        <h2>
+          From random ideas to
+          <span>real progress.</span>
+        </h2>
+
+        <p>
+          MindMate connects capture, planning, execution and
+          feedback into one intelligent productivity system.
+        </p>
+
+      </div>
+
+
+      <div class="feature-grid">
+
+        <article class="feature-card">
+
+          <div class="feature-icon">
+            ✦
+          </div>
+
+          <h3>
+            Capture Anything
+          </h3>
+
+          <p>
+            Save thoughts, links, screenshots and voice notes
+            before they disappear from your mind.
+          </p>
+
+        </article>
+
+
+        <article class="feature-card">
+
+          <div class="feature-icon">
+            ◈
+          </div>
+
+          <h3>
+            Understand Intent
+          </h3>
+
+          <p>
+            AI converts raw information into meaningful,
+            actionable tasks.
+          </p>
+
+        </article>
+
+
+        <article class="feature-card">
+
+          <div class="feature-icon">
+            ◎
+          </div>
+
+          <h3>
+            Plan Your Day
+          </h3>
+
+          <p>
+            Build realistic schedules using your available
+            time, priorities and execution history.
+          </p>
+
+        </article>
+
+
+        <article class="feature-card">
+
+          <div class="feature-icon">
+            ↗
+          </div>
+
+          <h3>
+            Learn From You
+          </h3>
+
+          <p>
+            MindMate learns from execution and reminder
+            behavior to improve future recommendations.
+          </p>
+
+        </article>
+
+      </div>
+
+    </section>
+
+
+    <section
+      id="how-it-works"
+      class="workflow-section">
+
+      <div class="section-heading">
+
+        <span class="eyebrow">
+          HOW IT WORKS
+        </span>
+
+        <h2>
+          One simple flow.
+        </h2>
+
+        <p>
+          MindMate follows your journey from intention to execution.
+        </p>
+
+      </div>
+
+
+      <div class="workflow">
+
+        <div class="workflow-step">
+
+          <span class="step-number">01</span>
+
+          <div class="step-icon">✦</div>
+
+          <h3>Capture</h3>
+
+          <p>
+            Save anything you don't want to forget.
+          </p>
+
+        </div>
+
+
+        <div class="workflow-line"></div>
+
+
+        <div class="workflow-step">
+
+          <span class="step-number">02</span>
+
+          <div class="step-icon">◎</div>
+
+          <h3>Understand</h3>
+
+          <p>
+            AI identifies the actual intention.
+          </p>
+
+        </div>
+
+
+        <div class="workflow-line"></div>
+
+
+        <div class="workflow-step">
+
+          <span class="step-number">03</span>
+
+          <div class="step-icon">◈</div>
+
+          <h3>Organize</h3>
+
+          <p>
+            Turn intent into tasks and goals.
+          </p>
+
+        </div>
+
+
+        <div class="workflow-line"></div>
+
+
+        <div class="workflow-step">
+
+          <span class="step-number">04</span>
+
+          <div class="step-icon">→</div>
+
+          <h3>Execute</h3>
+
+          <p>
+            Plan, act, learn and improve.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section class="cta-section">
+
+      <div>
+
+        <span class="eyebrow">
+          START SMALL
+        </span>
+
+        <h2>
+          Your next productive day
+          starts with one capture.
+        </h2>
+
+        <p>
+          Give your ideas somewhere to go.
+        </p>
+
+      </div>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goToRegister()">
+
+        Create your account
+        <span>→</span>
+
+      </button>
+
+    </section>
+
+  </main>
+
+
+  <footer class="footer">
+
+    <div class="brand">
+      <span class="brand-mark">✦</span>
+      MindMate
+    </div>
+
+    <span>
+      Built for better days.
+    </span>
+
+  </footer>
+
+</div>

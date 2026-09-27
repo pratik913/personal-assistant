@@ -5,9 +5,11 @@ import com.personalassistant.dto.CreateCaptureRequest;
 import com.personalassistant.service.CaptureService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +35,26 @@ public class CaptureController {
 
         return captureService.createCapture(
                 request,
+                userId
+        );
+    }
+
+    @PostMapping(
+            value = "/image",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    public CaptureResponse createImageCapture(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "content", required = false) String content,
+            Authentication authentication
+    ) {
+
+        UUID userId = UUID.fromString(authentication.getName());
+
+        return captureService.createImageCapture(
+                file,
+                content,
                 userId
         );
     }

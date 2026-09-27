@@ -47,7 +47,8 @@ public class AiPlannerService {
 
     private final ObjectMapper objectMapper;
 
-    private final TaskPlanningService taskPlanningService;
+    private final SmartPlanningContextService
+            smartPlanningContextService;
 
     private final NotificationService notificationService;
 
@@ -60,7 +61,8 @@ public class AiPlannerService {
             AiService aiService,
             AiPlanMapper aiPlanMapper,
             ObjectMapper objectMapper,
-            TaskPlanningService taskPlanningService,
+            SmartPlanningContextService
+                    smartPlanningContextService,
             NotificationService notificationService
     ) {
 
@@ -85,11 +87,12 @@ public class AiPlannerService {
         this.objectMapper =
                 objectMapper;
 
-        this.taskPlanningService =
-                taskPlanningService;
+        this.smartPlanningContextService =
+                smartPlanningContextService;
 
         this.notificationService =
                 notificationService;
+
     }
 
 
@@ -112,26 +115,29 @@ public class AiPlannerService {
          * Get all tasks that are not completed.
          */
         List<Task> tasks =
-                taskRepository.findByUserIdAndStatusNot(
-                        userId,
-                        TaskStatus.COMPLETED
-                );
+                taskRepository
+                        .findByUserIdAndStatusNot(
+                                userId,
+                                TaskStatus.COMPLETED
+                        );
 
 
         /*
          * Get the user's existing schedule.
          */
         List<ScheduleEntry> scheduleEntries =
-                scheduleEntryRepository.findByUserId(
-                        userId
-                );
+                scheduleEntryRepository
+                        .findByUserId(
+                                userId
+                        );
 
 
         /*
          * Only schedule entries belonging to the
          * requested planning date are relevant.
          */
-        List<ScheduleEntry> relevantScheduleEntries =
+        List<ScheduleEntry>
+                relevantScheduleEntries =
                 filterScheduleForPlanningDate(
                         scheduleEntries,
                         request,
@@ -140,7 +146,7 @@ public class AiPlannerService {
 
 
         /*
-         * Build the information sent to AI.
+         * Build the normal planning context.
          */
         String planningContext =
                 buildPlanningContext(
@@ -149,6 +155,39 @@ public class AiPlannerService {
                         tasks,
                         relevantScheduleEntries
                 );
+
+
+        /*
+         * Day 27:
+         *
+         * Add deterministic planning intelligence.
+         *
+         * This contains:
+         *
+         * - historical task duration
+         * - recommended duration
+         * - confidence
+         * - available capacity
+         * - existing schedule usage
+         * - planning buffer
+         */
+        String smartPlanningContext =
+                smartPlanningContextService
+                        .buildPlanningIntelligence(
+                                userId,
+                                request,
+                                tasks,
+                                relevantScheduleEntries,
+                                ZoneId.of(
+                                        user.getTimezone()
+                                )
+                        );
+
+
+        planningContext =
+                planningContext
+                        + "\n\n"
+                        + smartPlanningContext;
 
 
         /*
@@ -162,6 +201,14 @@ public class AiPlannerService {
 
         /*
          * Never trust AI output directly.
+         *
+         * The backend remains responsible for:
+         *
+         * - ownership
+         * - time window
+         * - duration validity
+         * - task overlap
+         * - schedule conflicts
          */
         validatePlan(
                 aiPlanData,
@@ -184,12 +231,15 @@ public class AiPlannerService {
                             aiPlanData
                     );
 
-        } catch (JsonProcessingException exception) {
+        } catch (
+                JsonProcessingException exception
+        ) {
 
             throw new IllegalStateException(
                     "Unable to save AI plan data.",
                     exception
             );
+
         }
 
 
@@ -199,7 +249,9 @@ public class AiPlannerService {
         AiPlan aiPlan =
                 new AiPlan();
 
-        aiPlan.setUser(user);
+        aiPlan.setUser(
+                user
+        );
 
         aiPlan.setSummary(
                 buildSummary(
@@ -222,14 +274,7 @@ public class AiPlannerService {
 
 
         /*
-         * Synchronize task-start notifications
-         * with the newly generated plan.
-         *
-         * This handles:
-         *
-         * 1. Existing matching notifications
-         * 2. Obsolete future notifications
-         * 3. Newly required notifications
+         * Create notifications for scheduled tasks.
          */
         createNotificationsForPlan(
                 userId,
@@ -243,17 +288,10 @@ public class AiPlannerService {
         return aiPlanMapper.toResponse(
                 savedPlan
         );
+
     }
 
 
-    /**
-     * Synchronizes task-start notifications with
-     * the generated AI plan.
-     *
-     * NotificationService owns the actual
-     * notification persistence and duplicate
-     * handling logic.
-     */
     private void createNotificationsForPlan(
             UUID userId,
             AiPlanData plan
@@ -265,28 +303,40 @@ public class AiPlannerService {
         ) {
 
             return;
+
         }
 
 
-        /*
-         * Pass the complete generated plan to
-         * NotificationService.
-         *
-         * NotificationService decides:
-         *
-         * - which notifications already exist
-         * - which future notifications are obsolete
-         * - which notifications need to be created
-         */
-        notificationService
-                .createNotificationsForPlan(
-                        userId,
-                        plan.items()
-                );
+        for (
+                AiPlanItem item :
+                plan.items()
+        ) {
+
+            if (
+                    item == null ||
+                            item.taskId() == null ||
+                            item.startAt() == null
+            ) {
+
+                continue;
+
+            }
+
+
+            notificationService
+                    .createTaskStartingNotification(
+                            userId,
+                            item.taskId(),
+                            item.startAt()
+                    );
+
+        }
+
     }
 
 
-    private List<ScheduleEntry> filterScheduleForPlanningDate(
+    private List<ScheduleEntry>
+    filterScheduleForPlanningDate(
             List<ScheduleEntry> scheduleEntries,
             CreateAiPlanRequest request,
             User user
@@ -309,6 +359,7 @@ public class AiPlannerService {
                                 )
                 )
                 .toList();
+
     }
 
 
@@ -412,7 +463,7 @@ public class AiPlannerService {
 
 
         /*
-         * Existing schedule.
+         * Existing schedule that the AI must respect.
          */
         context.append(
                 "Existing schedule for this date:\n"
@@ -431,15 +482,21 @@ public class AiPlannerService {
 
             scheduleEntries.forEach(entry -> {
 
-                context.append("- ")
+                context.append(
+                                "- "
+                        )
                         .append(
                                 entry.getStartAt()
                         )
-                        .append(" - ")
+                        .append(
+                                " - "
+                        )
                         .append(
                                 entry.getEndAt()
                         )
-                        .append(": ")
+                        .append(
+                                ": "
+                        )
                         .append(
                                 entry.getTask()
                                         .getTitle()
@@ -452,6 +509,7 @@ public class AiPlannerService {
 
 
         return context.toString();
+
     }
 
 
@@ -460,7 +518,8 @@ public class AiPlannerService {
             List<Task> availableTasks,
             CreateAiPlanRequest request,
             User user,
-            List<ScheduleEntry> existingScheduleEntries
+            List<ScheduleEntry>
+                    existingScheduleEntries
     ) {
 
         if (
@@ -471,13 +530,19 @@ public class AiPlannerService {
             throw new IllegalStateException(
                     "AI returned an invalid plan."
             );
+
         }
 
 
+        /*
+         * Get IDs of tasks that the user actually owns.
+         */
         Set<UUID> availableTaskIds =
                 availableTasks
                         .stream()
-                        .map(Task::getId)
+                        .map(
+                                Task::getId
+                        )
                         .collect(
                                 Collectors.toSet()
                         );
@@ -494,7 +559,9 @@ public class AiPlannerService {
                         .atTime(
                                 request.getAvailableFrom()
                         )
-                        .atZone(zoneId)
+                        .atZone(
+                                zoneId
+                        )
                         .toInstant();
 
 
@@ -503,10 +570,15 @@ public class AiPlannerService {
                         .atTime(
                                 request.getAvailableUntil()
                         )
-                        .atZone(zoneId)
+                        .atZone(
+                                zoneId
+                        )
                         .toInstant();
 
 
+        /*
+         * Validate every AI-generated item.
+         */
         for (
                 AiPlanItem item :
                 plan.items()
@@ -522,6 +594,7 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI returned a task that is not available."
                 );
+
             }
 
 
@@ -533,6 +606,7 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI returned an invalid time range."
                 );
+
             }
 
 
@@ -546,6 +620,7 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI returned an invalid task duration."
                 );
+
             }
 
 
@@ -563,6 +638,7 @@ public class AiPlannerService {
                 throw new IllegalStateException(
                         "AI scheduled a task outside the available window."
                 );
+
             }
 
         }
@@ -666,6 +742,13 @@ public class AiPlannerService {
                 plan.items() == null
                         ? 0
                         : plan.items().size();
+
+
+        if (count == 0) {
+
+            return "No tasks could be scheduled.";
+
+        }
 
 
         return "AI generated a plan with "

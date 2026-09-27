@@ -1,1 +1,248 @@
-<p>login works!</p>
+<div class="auth-page">
+
+  <div class="auth-layout">
+
+    <section class="auth-visual">
+
+      <button
+        type="button"
+        class="brand"
+        (click)="goToLanding()">
+
+        <span class="brand-mark">✦</span>
+        MindMate
+
+      </button>
+
+
+      <div class="visual-content">
+
+        <span class="visual-eyebrow">
+          YOUR PRODUCTIVITY COMPANION
+        </span>
+
+        <h1>
+          Small steps
+          <br>
+          every day lead
+          <br>
+          to <span>big results.</span>
+        </h1>
+
+        <p>
+          Capture what matters. Let MindMate help you
+          organize it into meaningful action.
+        </p>
+
+        <div class="visual-flow">
+
+          <span>Capture</span>
+          <b>→</b>
+          <span>Understand</span>
+          <b>→</b>
+          <span>Execute</span>
+
+        </div>
+
+      </div>
+
+
+      <div class="visual-footer">
+        Built around your goals and your real behavior.
+      </div>
+
+    </section>
+
+
+    <section class="auth-form-section">
+
+      <div class="auth-card">
+
+        <div class="mobile-brand">
+
+          <button
+            type="button"
+            class="brand"
+            (click)="goToLanding()">
+
+            <span class="brand-mark">✦</span>
+            MindMate
+
+          </button>
+
+        </div>
+
+
+        <div class="form-heading">
+
+          <span class="eyebrow">
+            WELCOME BACK
+          </span>
+
+          <h1>
+            Sign in to MindMate
+          </h1>
+
+          <p>
+            Continue your productivity journey.
+          </p>
+
+        </div>
+
+
+        <form
+          (ngSubmit)="login()"
+          #loginForm="ngForm">
+
+          <div class="field">
+
+            <label for="email">
+              Email
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              [(ngModel)]="email"
+              autocomplete="email"
+              placeholder="you@example.com">
+
+          </div>
+
+
+          <div class="field">
+
+            <div class="field-label-row">
+
+              <label for="password">
+                Password
+              </label>
+
+              <button
+                type="button"
+                class="forgot-button"
+                (click)="forgotPassword()">
+
+                Forgot password?
+
+              </button>
+
+            </div>
+
+
+            <div class="password-wrapper">
+
+              <input
+                id="password"
+                name="password"
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password"
+                autocomplete="current-password"
+                placeholder="Enter your password">
+
+              <button
+                type="button"
+                class="eye-button"
+                (click)="togglePassword()">
+
+                {{ showPassword ? 'Hide' : 'Show' }}
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <label class="remember-row">
+
+            <input
+              type="checkbox"
+              name="rememberMe"
+              [(ngModel)]="rememberMe">
+
+            <span>
+              Remember me
+            </span>
+
+          </label>
+
+
+          @if (errorMessage) {
+
+            <div class="error-message">
+              {{ errorMessage }}
+            </div>
+
+          }
+
+
+          <button
+            type="submit"
+            class="submit-button"
+            [disabled]="isSubmitting">
+
+            @if (isSubmitting) {
+              Signing in...
+            } @else {
+              Sign In
+              <span>→</span>
+            }
+
+          </button>
+
+        </form>
+
+
+        <div class="divider">
+          <span>OR CONTINUE WITH</span>
+        </div>
+
+
+        <div class="social-grid">
+
+          <button
+            type="button"
+            class="social-button"
+            disabled>
+
+            <span>G</span>
+            Google
+
+          </button>
+
+          <button
+            type="button"
+            class="social-button"
+            disabled>
+
+            <span>GH</span>
+            GitHub
+
+          </button>
+
+        </div>
+
+
+        <p class="bottom-text">
+
+          Don't have an account?
+
+          <button
+            type="button"
+            (click)="goToRegister()">
+
+            Create one
+
+          </button>
+
+        </p>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</div>

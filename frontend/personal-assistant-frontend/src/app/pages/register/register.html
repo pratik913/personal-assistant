@@ -1,1 +1,273 @@
-<p>register works!</p>
+<div class="auth-page">
+
+  <div class="auth-layout">
+
+    <section class="auth-form-section">
+
+      <div class="auth-card">
+
+        <div class="brand-wrapper">
+
+          <button
+            type="button"
+            class="brand"
+            (click)="goToLanding()">
+
+            <span class="brand-mark">✦</span>
+            MindMate
+
+          </button>
+
+        </div>
+
+
+        <div class="form-heading">
+
+          <span class="eyebrow">
+            GET STARTED
+          </span>
+
+          <h1>
+            Create your account
+          </h1>
+
+          <p>
+            Start building a better, more intentional day.
+          </p>
+
+        </div>
+
+
+        <form (ngSubmit)="register()">
+
+          <div class="field">
+
+            <label for="name">
+              Full name
+            </label>
+
+            <input
+              id="name"
+              name="name"
+              type="text"
+              [(ngModel)]="name"
+              autocomplete="name"
+              placeholder="Your name">
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="email">
+              Email
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              [(ngModel)]="email"
+              autocomplete="email"
+              placeholder="you@example.com">
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="password">
+              Password
+            </label>
+
+            <div class="password-wrapper">
+
+              <input
+                id="password"
+                name="password"
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password"
+                autocomplete="new-password"
+                placeholder="Create a password">
+
+              <button
+                type="button"
+                class="eye-button"
+                (click)="togglePassword()">
+
+                {{ showPassword ? 'Hide' : 'Show' }}
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="confirmPassword">
+              Confirm password
+            </label>
+
+            <div class="password-wrapper">
+
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                [(ngModel)]="confirmPassword"
+                autocomplete="new-password"
+                placeholder="Confirm your password">
+
+              <button
+                type="button"
+                class="eye-button"
+                (click)="toggleConfirmPassword()">
+
+                {{ showConfirmPassword ? 'Hide' : 'Show' }}
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <label class="terms-row">
+
+            <input
+              type="checkbox"
+              name="acceptedTerms"
+              [(ngModel)]="acceptedTerms">
+
+            <span>
+              I agree to the
+              <button type="button">
+                Terms of Service
+              </button>
+              and
+              <button type="button">
+                Privacy Policy
+              </button>.
+            </span>
+
+          </label>
+
+
+          @if (errorMessage) {
+
+            <div class="error-message">
+              {{ errorMessage }}
+            </div>
+
+          }
+
+
+          <button
+            type="submit"
+            class="submit-button"
+            [disabled]="isSubmitting">
+
+            @if (isSubmitting) {
+              Creating account...
+            } @else {
+              Create Account
+              <span>→</span>
+            }
+
+          </button>
+
+        </form>
+
+
+        <div class="divider">
+          <span>OR CONTINUE WITH</span>
+        </div>
+
+
+        <div class="social-grid">
+
+          <button
+            type="button"
+            class="social-button"
+            disabled>
+
+            <span>G</span>
+            Google
+
+          </button>
+
+          <button
+            type="button"
+            class="social-button"
+            disabled>
+
+            <span>GH</span>
+            GitHub
+
+          </button>
+
+        </div>
+
+
+        <p class="bottom-text">
+
+          Already have an account?
+
+          <button
+            type="button"
+            (click)="goToLogin()">
+
+            Sign in
+
+          </button>
+
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <section class="auth-visual">
+
+      <div class="visual-decoration"></div>
+
+      <div class="visual-content">
+
+        <span class="visual-eyebrow">
+          MINDMATE
+        </span>
+
+        <h1>
+          Good habits.
+          <br>
+          Brighter
+          <span>days.</span>
+        </h1>
+
+        <p>
+          Your ideas deserve more than a screenshot folder
+          and a forgotten note.
+        </p>
+
+
+        <div class="quote-card">
+
+          <span>✦</span>
+
+          <p>
+            “The best productivity system is the one
+            that understands what you actually want to do.”
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</div>

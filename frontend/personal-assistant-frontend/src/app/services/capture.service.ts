@@ -2,7 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export type CaptureType = 'TEXT' | 'URL';
+export type CaptureType =
+  | 'TEXT'
+  | 'URL'
+  | 'IMAGE'
+  | 'VOICE';
 
 export interface CreateCaptureRequest {
   type: CaptureType;
@@ -31,7 +35,8 @@ export class CaptureService {
 
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:8080/api/captures';
+  private readonly baseUrl =
+    'http://localhost:8080/api/captures';
 
   createCapture(
     request: CreateCaptureRequest
@@ -40,6 +45,32 @@ export class CaptureService {
     return this.http.post<CaptureResponse>(
       this.baseUrl,
       request
+    );
+  }
+
+  createImageCapture(
+    file: File,
+    content?: string
+  ): Observable<CaptureResponse> {
+
+    const formData = new FormData();
+
+    formData.append(
+      'file',
+      file,
+      file.name
+    );
+
+    if (content?.trim()) {
+      formData.append(
+        'content',
+        content.trim()
+      );
+    }
+
+    return this.http.post<CaptureResponse>(
+      `${this.baseUrl}/image`,
+      formData
     );
   }
 }

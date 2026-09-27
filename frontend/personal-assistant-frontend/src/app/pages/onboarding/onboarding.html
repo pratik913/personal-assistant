@@ -1,1 +1,265 @@
-<p>onboarding works!</p>
+<div class="onboarding-page">
+
+  <header class="topbar">
+
+    <button
+      type="button"
+      class="brand"
+      (click)="skip()">
+
+      <span class="brand-mark">✦</span>
+      MindMate
+
+    </button>
+
+    <button
+      type="button"
+      class="skip-button"
+      (click)="skip()">
+
+      Skip for now
+
+    </button>
+
+  </header>
+
+
+  <main class="onboarding-container">
+
+    <div class="progress-area">
+
+      <div class="progress-track">
+
+        <div
+          class="progress-fill"
+          [style.width]="currentStep === 1 ? '50%' : '100%'">
+        </div>
+
+      </div>
+
+
+      <div class="steps">
+
+        <div
+          class="step"
+          [class.active]="currentStep >= 1">
+
+          <span>1</span>
+          Personalize
+
+        </div>
+
+        <div
+          class="step"
+          [class.active]="currentStep >= 2">
+
+          <span>2</span>
+          Goals
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    @if (currentStep === 1) {
+
+      <section class="onboarding-card">
+
+        <div class="content">
+
+          <span class="eyebrow">
+            STEP 1 · PERSONALIZE
+          </span>
+
+          <h1>
+            Let's get to know you.
+          </h1>
+
+          <p class="subtitle">
+            This helps MindMate provide better suggestions
+            for the things that matter to you.
+          </p>
+
+
+          <div class="question">
+
+            <h2>
+              What are your main interests?
+            </h2>
+
+            <p>
+              Select everything that applies.
+            </p>
+
+          </div>
+
+
+          <div class="interest-grid">
+
+            @for (interest of interests; track interest.label) {
+
+              <button
+                type="button"
+                class="interest-card"
+                [class.selected]="isSelected(interest.label)"
+                (click)="toggleInterest(interest.label)">
+
+                <span class="interest-icon">
+                  {{ interest.icon }}
+                </span>
+
+                <span>
+                  {{ interest.label }}
+                </span>
+
+                @if (isSelected(interest.label)) {
+                  <strong>✓</strong>
+                }
+
+              </button>
+
+            }
+
+          </div>
+
+
+          <div class="actions">
+
+            <button
+              type="button"
+              class="primary-button"
+              [disabled]="selectedInterests.length === 0"
+              (click)="next()">
+
+              Continue
+              <span>→</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <aside class="side-panel">
+
+          <div class="illustration">
+
+            <div class="plant">
+              🌿
+            </div>
+
+            <div class="person">
+              ◉
+            </div>
+
+            <div class="tablet">
+              <span>Small steps</span>
+              <strong>big progress</strong>
+            </div>
+
+          </div>
+
+          <p>
+            Your productivity system should work
+            around your life — not against it.
+          </p>
+
+        </aside>
+
+      </section>
+
+    }
+
+
+    @if (currentStep === 2) {
+
+      <section class="onboarding-card single">
+
+        <div class="content">
+
+          <span class="eyebrow">
+            STEP 2 · GOALS
+          </span>
+
+          <h1>
+            What do you want to achieve?
+          </h1>
+
+          <p class="subtitle">
+            MindMate will use this context when helping you
+            organize your tasks and plans.
+          </p>
+
+
+          <div class="question">
+
+            <h2>
+              What's your primary goal?
+            </h2>
+
+          </div>
+
+
+          <div class="goal-list">
+
+            @for (goal of goals; track goal) {
+
+              <button
+                type="button"
+                class="goal-option"
+                [class.selected]="primaryGoal === goal"
+                (click)="primaryGoal = goal">
+
+                <span class="goal-icon">
+                  ✦
+                </span>
+
+                <span>{{ goal }}</span>
+
+                @if (primaryGoal === goal) {
+                  <strong>✓</strong>
+                }
+
+              </button>
+
+            }
+
+          </div>
+
+
+          <div class="actions split">
+
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="back()">
+
+              ← Back
+
+            </button>
+
+            <button
+              type="button"
+              class="primary-button"
+              [disabled]="!primaryGoal"
+              (click)="completeOnboarding()">
+
+              Finish
+              <span>→</span>
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    }
+
+  </main>
+
+</div>

@@ -1,24 +1,45 @@
 <div class="dashboard-page">
 
+  @if (errorMessage) {
+
+    <div class="error-message">
+      {{ errorMessage }}
+    </div>
+
+  }
+
+
   <!-- Header -->
 
   <header class="dashboard-header">
 
     <div>
-      <p class="eyebrow">OVERVIEW</p>
+
+      <p class="eyebrow">
+        OVERVIEW
+      </p>
 
       <h1>
-        Good evening, Pratik 👋
+        {{ greeting }}, {{ userName }} 👋
       </h1>
 
       <p class="subtitle">
         Here's what's happening today.
       </p>
+
     </div>
 
+
     <div class="current-date">
-      <span>Wednesday</span>
-      <strong>Sep 17, 2026</strong>
+
+      <span>
+        {{ formattedWeekday }}
+      </span>
+
+      <strong>
+        {{ formattedDate }}
+      </strong>
+
     </div>
 
   </header>
@@ -28,7 +49,10 @@
 
   <section class="stats-grid">
 
-    @for (stat of stats; track stat.label) {
+    @for (
+      stat of stats;
+      track stat.label
+    ) {
 
       <div
         class="stat-card"
@@ -53,15 +77,24 @@
 
   <div class="dashboard-grid">
 
+
     <!-- Today's tasks -->
 
-    <section class="dashboard-card tasks-card">
+    <section
+      class="dashboard-card tasks-card">
 
       <div class="card-header">
 
         <div>
-          <h2>Today's Tasks</h2>
-          <p>Stay focused on what matters.</p>
+
+          <h2>
+            Today's Tasks
+          </h2>
+
+          <p>
+            Stay focused on what matters.
+          </p>
+
         </div>
 
         <a routerLink="/tasks">
@@ -71,68 +104,125 @@
       </div>
 
 
-      <div class="task-list">
+      @if (isLoading) {
 
-        @for (task of todaysTasks; track task.title) {
+        <div class="dashboard-empty-state">
 
-          <div class="task-row">
+          <strong>
+            Loading your tasks...
+          </strong>
 
-            <div
-              class="task-status"
-              [class.completed]="task.status === 'COMPLETED'"
-              [class.in-progress]="task.status === 'IN_PROGRESS'">
-            </div>
+          <p>
+            Fetching your personal tasks.
+          </p>
+
+        </div>
+
+      } @else if (
+        todaysTasks.length === 0
+      ) {
+
+        <div class="dashboard-empty-state">
+
+          <strong>
+            No tasks yet.
+          </strong>
+
+          <p>
+            Capture something or create a task
+            to get started.
+          </p>
+
+        </div>
+
+      } @else {
+
+        <div class="task-list">
+
+          @for (
+            task of todaysTasks;
+            track task.id
+          ) {
+
+            <div class="task-row">
+
+              <div
+                class="task-status"
+                [class.completed]="
+                  task.status === 'COMPLETED'
+                "
+                [class.in-progress]="
+                  task.status === 'IN_PROGRESS'
+                ">
+              </div>
 
 
-            <div class="task-content">
+              <div class="task-content">
 
-              <div class="task-title-row">
+                <div class="task-title-row">
 
-                <strong>
-                  {{ task.title }}
-                </strong>
+                  <strong>
+                    {{ task.title }}
+                  </strong>
 
-                <span
-                  class="priority"
-                  [class.high]="task.priority === 'HIGH'"
-                  [class.medium]="task.priority === 'MEDIUM'"
-                  [class.low]="task.priority === 'LOW'">
+                  <span
+                    class="priority"
+                    [class.high]="
+                      task.priority === 'HIGH'
+                    "
+                    [class.medium]="
+                      task.priority === 'MEDIUM'
+                    "
+                    [class.low]="
+                      task.priority === 'LOW'
+                    ">
 
-                  {{ task.priority }}
+                    {{ task.priority }}
 
-                </span>
+                  </span>
+
+                </div>
+
+
+                <p>
+                  {{ task.description }}
+                </p>
 
               </div>
 
-              <p>
-                {{ task.description }}
-              </p>
+
+              <span class="task-time">
+                {{ task.time }}
+              </span>
 
             </div>
 
+          }
 
-            <span class="task-time">
-              {{ task.time }}
-            </span>
+        </div>
 
-          </div>
-
-        }
-
-      </div>
+      }
 
     </section>
 
 
     <!-- Quick Actions -->
 
-    <section class="dashboard-card quick-actions-card">
+    <section
+      class="dashboard-card quick-actions-card">
 
       <div class="card-header">
 
         <div>
-          <h2>Quick Actions</h2>
-          <p>Get things done faster.</p>
+
+          <h2>
+            Quick Actions
+          </h2>
+
+          <p>
+            Get things done faster.
+          </p>
+
         </div>
 
       </div>
@@ -144,14 +234,25 @@
           routerLink="/capture"
           class="quick-action primary">
 
-          <span class="action-icon">✦</span>
+          <span class="action-icon">
+            ✦
+          </span>
 
           <div>
-            <strong>Capture Something</strong>
-            <span>Let AI organize your thought</span>
+
+            <strong>
+              Capture Something
+            </strong>
+
+            <span>
+              Let AI organize your thought
+            </span>
+
           </div>
 
-          <span class="arrow">→</span>
+          <span class="arrow">
+            →
+          </span>
 
         </a>
 
@@ -160,14 +261,25 @@
           routerLink="/tasks"
           class="quick-action">
 
-          <span class="action-icon">✓</span>
+          <span class="action-icon">
+            ✓
+          </span>
 
           <div>
-            <strong>Add Task</strong>
-            <span>Create a task manually</span>
+
+            <strong>
+              Add Task
+            </strong>
+
+            <span>
+              Create a task manually
+            </span>
+
           </div>
 
-          <span class="arrow">→</span>
+          <span class="arrow">
+            →
+          </span>
 
         </a>
 
@@ -176,14 +288,25 @@
           routerLink="/planner"
           class="quick-action">
 
-          <span class="action-icon">▦</span>
+          <span class="action-icon">
+            ▦
+          </span>
 
           <div>
-            <strong>Open Planner</strong>
-            <span>Plan your day</span>
+
+            <strong>
+              Open Planner
+            </strong>
+
+            <span>
+              Plan your day
+            </span>
+
           </div>
 
-          <span class="arrow">→</span>
+          <span class="arrow">
+            →
+          </span>
 
         </a>
 
@@ -192,14 +315,25 @@
           routerLink="/goals"
           class="quick-action">
 
-          <span class="action-icon">◎</span>
+          <span class="action-icon">
+            ◎
+          </span>
 
           <div>
-            <strong>Set a Goal</strong>
-            <span>Work toward something bigger</span>
+
+            <strong>
+              Set a Goal
+            </strong>
+
+            <span>
+              Work toward something bigger
+            </span>
+
           </div>
 
-          <span class="arrow">→</span>
+          <span class="arrow">
+            →
+          </span>
 
         </a>
 
@@ -212,13 +346,21 @@
 
   <!-- Upcoming -->
 
-  <section class="dashboard-card upcoming-card">
+  <section
+    class="dashboard-card upcoming-card">
 
     <div class="card-header">
 
       <div>
-        <h2>Coming Up</h2>
-        <p>Don't forget what's next.</p>
+
+        <h2>
+          Coming Up
+        </h2>
+
+        <p>
+          Don't forget what's next.
+        </p>
+
       </div>
 
       <a routerLink="/schedule">
@@ -228,42 +370,73 @@
     </div>
 
 
-    <div class="upcoming-list">
+    @if (upcomingTasks.length === 0) {
 
-      @for (task of upcomingTasks; track task.title) {
+      <div class="dashboard-empty-state">
 
-        <div class="upcoming-item">
+        <strong>
+          Nothing scheduled yet.
+        </strong>
 
-          <div class="upcoming-icon">
-            ○
-          </div>
+        <p>
+          Add a task to your schedule to see
+          upcoming work here.
+        </p>
 
-          <div class="upcoming-content">
+      </div>
 
-            <strong>
-              {{ task.title }}
-            </strong>
+    } @else {
 
-            <span>
-              {{ task.time }}
+      <div class="upcoming-list">
+
+        @for (
+          task of upcomingTasks;
+          track task.id
+        ) {
+
+          <div class="upcoming-item">
+
+            <div class="upcoming-icon">
+              ○
+            </div>
+
+
+            <div class="upcoming-content">
+
+              <strong>
+                {{ task.title }}
+              </strong>
+
+              <span>
+                {{ task.time }}
+              </span>
+
+            </div>
+
+
+            <span
+              class="priority"
+              [class.high]="
+                task.priority === 'HIGH'
+              "
+              [class.medium]="
+                task.priority === 'MEDIUM'
+              "
+              [class.low]="
+                task.priority === 'LOW'
+              ">
+
+              {{ task.priority }}
+
             </span>
 
           </div>
 
-          <span
-            class="priority"
-            [class.medium]="task.priority === 'MEDIUM'"
-            [class.low]="task.priority === 'LOW'">
+        }
 
-            {{ task.priority }}
+      </div>
 
-          </span>
-
-        </div>
-
-      }
-
-    </div>
+    }
 
   </section>
 
@@ -283,8 +456,8 @@
       </strong>
 
       <p>
-        Your highest-priority task is still in progress.
-        Consider finishing it before starting something new.
+        Your dashboard is now connected to your
+        authenticated MindMate data.
       </p>
 
     </div>

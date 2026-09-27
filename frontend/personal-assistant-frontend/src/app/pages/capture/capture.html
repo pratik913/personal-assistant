@@ -1,7 +1,5 @@
 <div class="capture-page">
 
-  <!-- Header -->
-
   <header class="capture-header">
 
     <div>
@@ -24,13 +22,11 @@
   </header>
 
 
-  <!-- Capture card -->
-
   <section class="capture-card">
 
-    <!-- Capture type -->
-
     <div class="capture-tabs">
+
+      <!-- TEXT -->
 
       <button
         type="button"
@@ -50,6 +46,8 @@
       </button>
 
 
+      <!-- URL -->
+
       <button
         type="button"
         class="capture-tab"
@@ -63,6 +61,46 @@
         <span>
           <strong>Link</strong>
           <small>Save a resource</small>
+        </span>
+
+      </button>
+
+
+      <!-- IMAGE -->
+
+      <button
+        type="button"
+        class="capture-tab"
+        [class.active]="captureType === 'IMAGE'"
+        (click)="selectType('IMAGE')">
+
+        <span class="tab-icon">
+          ▧
+        </span>
+
+        <span>
+          <strong>Screenshot</strong>
+          <small>Save an image</small>
+        </span>
+
+      </button>
+
+
+      <!-- VOICE -->
+
+      <button
+        type="button"
+        class="capture-tab"
+        [class.active]="captureType === 'VOICE'"
+        (click)="selectType('VOICE')">
+
+        <span class="tab-icon">
+          ◉
+        </span>
+
+        <span>
+          <strong>Voice</strong>
+          <small>Coming next</small>
         </span>
 
       </button>
@@ -122,7 +160,7 @@
           placeholder="https://example.com/article">
 
         <span class="field-hint">
-          Paste a link to a tutorial, article, video, or resource.
+          Paste a tutorial, article, video, resource, or Instagram Reel.
         </span>
 
       </div>
@@ -153,6 +191,143 @@
     }
 
 
+    <!-- IMAGE -->
+
+    @if (captureType === 'IMAGE') {
+
+      <div class="capture-input-section">
+
+        <label>
+          Upload a screenshot
+        </label>
+
+        <div
+          class="image-upload-zone"
+          [class.has-image]="selectedImage"
+          (dragover)="onDragOver($event)"
+          (drop)="onImageDrop($event)">
+
+          @if (!selectedImage) {
+
+            <div class="upload-empty">
+
+              <div class="upload-icon">
+                ▧
+              </div>
+
+              <strong>
+                Drop your screenshot here
+              </strong>
+
+              <span>
+                or choose an image from your device
+              </span>
+
+              <label class="choose-file-button">
+
+                Choose screenshot
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  (change)="onImageSelected($event)">
+
+              </label>
+
+              <small>
+                JPG, PNG or WebP · Maximum 5 MB
+              </small>
+
+            </div>
+
+          } @else {
+
+            <div class="image-preview-wrapper">
+
+              <img
+                class="image-preview"
+                [src]="imagePreviewUrl"
+                alt="Selected screenshot preview">
+
+              <div class="image-file-info">
+
+                <strong>
+                  {{ selectedImage.name }}
+                </strong>
+
+                <span>
+                  {{ (selectedImage.size / 1024 / 1024).toFixed(2) }} MB
+                </span>
+
+              </div>
+
+              <button
+                type="button"
+                class="remove-image-button"
+                (click)="removeSelectedImage()">
+
+                Remove screenshot
+
+              </button>
+
+            </div>
+
+          }
+
+        </div>
+
+      </div>
+
+
+      <div class="capture-input-section context-section">
+
+        <label for="imageContext">
+
+          What do you want MindMate to understand?
+
+          <span>
+            Optional
+          </span>
+
+        </label>
+
+        <textarea
+          id="imageContext"
+          [(ngModel)]="content"
+          rows="4"
+          maxlength="5000"
+          placeholder="Example: I want to learn the technology shown in this screenshot...">
+        </textarea>
+
+      </div>
+
+    }
+
+
+    <!-- VOICE -->
+
+    @if (captureType === 'VOICE') {
+
+      <div class="coming-soon-card">
+
+        <div class="coming-soon-icon">
+          ◉
+        </div>
+
+        <h2>
+          Voice capture is coming next
+        </h2>
+
+        <p>
+          Soon you'll be able to record a voice note and
+          MindMate will turn it into actionable tasks.
+        </p>
+
+      </div>
+
+    }
+
+
     <!-- Actions -->
 
     <div class="capture-actions">
@@ -164,7 +339,13 @@
         </span>
 
         <span>
-          AI will understand your capture and create actionable tasks.
+          @if (captureType === 'IMAGE') {
+            Your screenshot will be securely stored in MindMate.
+          } @else if (captureType === 'VOICE') {
+            Voice capture will be available in the next step.
+          } @else {
+            AI will understand your capture and create actionable tasks.
+          }
         </span>
 
       </div>
@@ -173,7 +354,7 @@
       <button
         type="button"
         class="analyze-button"
-        [disabled]="isSubmitting"
+        [disabled]="isSubmitting || captureType === 'VOICE'"
         (click)="submitCapture()">
 
         @if (isSubmitting) {
@@ -181,13 +362,17 @@
           <span class="spinner"></span>
 
           <span>
-            Analyzing...
+            Uploading...
           </span>
 
         } @else {
 
           <span>
-            Analyze with AI
+            @if (captureType === 'IMAGE') {
+              Save Screenshot
+            } @else {
+              Analyze with AI
+            }
           </span>
 
           <span class="button-arrow">
@@ -245,11 +430,11 @@
         <div>
 
           <span class="result-label">
-            AI ANALYSIS
+            CAPTURE SAVED
           </span>
 
           <h2>
-            Here's what I understood
+            Your screenshot is securely stored
           </h2>
 
         </div>
@@ -384,6 +569,5 @@
     </div>
 
   </section>
-
 
 </div>

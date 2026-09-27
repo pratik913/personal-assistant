@@ -652,3 +652,231 @@ display: block;
   color: var(--accent);
   font-size: 12px;
 }
+
+/* Screenshot upload */
+
+.image-upload-zone {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  transition:
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.image-upload-zone:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.image-upload-zone.has-image {
+  padding: 18px;
+  border-style: solid;
+}
+
+.upload-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 35px 20px;
+  text-align: center;
+}
+
+.upload-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 5px;
+  border-radius: 15px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.upload-empty strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.upload-empty > span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.upload-empty small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.choose-file-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 10px 15px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    transform var(--transition);
+}
+
+.choose-file-button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.choose-file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.image-preview-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.image-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  box-shadow: var(--shadow-sm);
+}
+
+.image-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.image-file-info strong {
+  max-width: 400px;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-file-info span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.remove-image-button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background var(--transition);
+}
+
+.remove-image-button:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--surface-hover);
+}
+
+
+/* Voice coming soon */
+
+.coming-soon-card {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 30px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  text-align: center;
+}
+
+.coming-soon-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 15px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 23px;
+}
+
+.coming-soon-card h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.coming-soon-card p {
+  max-width: 430px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+
+/* Responsive screenshot */
+
+@media (max-width: 800px) {
+
+  .image-upload-zone {
+    min-height: 250px;
+  }
+
+  .image-preview {
+    max-height: 320px;
+  }
+
+}
+
+@media (max-width: 500px) {
+
+  .image-upload-zone {
+    min-height: 230px;
+  }
+
+  .image-file-info {
+    max-width: 100%;
+  }
+
+  .image-file-info strong {
+    max-width: 220px;
+  }
+
+}
