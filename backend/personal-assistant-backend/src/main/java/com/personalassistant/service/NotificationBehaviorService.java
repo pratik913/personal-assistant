@@ -5,92 +5,140 @@ import com.personalassistant.entity.Notification;
 import com.personalassistant.entity.NotificationStatus;
 import com.personalassistant.entity.NotificationType;
 import com.personalassistant.entity.TaskExecution;
+import com.personalassistant.entity.TaskExecutionStatus;
 import com.personalassistant.repository.NotificationRepository;
 import com.personalassistant.repository.TaskExecutionRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class NotificationBehaviorService {
 
-    private static final long ACTION_WINDOW_MINUTES = 60;
-
     private final NotificationRepository notificationRepository;
+
     private final TaskExecutionRepository taskExecutionRepository;
 
-    public NotificationBehaviorInsightResponse getInsights(UUID userId) {
 
-        List<Notification> reminders =
-                notificationRepository.findByUserIdAndTypeOrderByScheduledAtDesc(
-                        userId,
-                        NotificationType.TASK_STARTING
-                );
+    public NotificationBehaviorService(
+            NotificationRepository notificationRepository,
+            TaskExecutionRepository taskExecutionRepository
+    ) {
 
-        List<TaskExecution> executions =
-                taskExecutionRepository.findByUserIdOrderByStartedAtDesc(userId);
+        this.notificationRepository =
+                notificationRepository;
 
-        long totalReminders = reminders.size();
+        this.taskExecutionRepository =
+                taskExecutionRepository;
 
-        long readReminders = reminders.stream()
-                .filter(notification -> notification.getStatus() == NotificationStatus.READ)
-                .count();
+    }
 
-        long ignoredReminders = totalReminders - readReminders;
 
-        Map<UUID, List<TaskExecution>> executionsByTask =
-                executions.stream()
-                        .collect(
-                                java.util.stream.Collectors.groupingBy(
-                                        execution -> execution.getTask().getId()
-                                )
+    public NotificationBehaviorInsightResponse getInsights(
+            UUID userId
+    ) {
+
+        /*
+         * =================================================
+         * ALL TASK-STARTING REMINDERS
+         * =================================================
+         */
+
+        List<Notification> notifications =
+                notificationRepository
+                        .findByUserIdAndTypeOrderByScheduledAtDesc(
+                                userId,
+                                NotificationType.TASK_STARTING
                         );
 
-        long actedOnReminders = 0;
 
-        long totalMinutesToStart = 0;
+        long totalReminders =
+                notifications.size();
 
-        long measuredStarts = 0;
 
-        for (Notification notification : reminders) {
+        long readReminders =
+                notifications
+                        .stream()
+                        .filter(notification ->
+                                notification.getStatus() ==
+                                        NotificationStatus.READ
+                        )
+                        .count();
 
-            List<TaskExecution> taskExecutions =
-                    executionsByTask.getOrDefault(
-                            notification.getTask().getId(),
-                            List.of()
-                    );
 
-            TaskExecution matchingExecution =
-                    findMatchingExecution(
-                            notification,
-                            taskExecutions
-                    );
+        long ignoredReminders =
+                totalReminders -
+                        readReminders;
 
-            if (matchingExecution != null) {
 
-                actedOnReminders++;
+        /*
+         * =================================================
+         * CORRELATED EXECUTIONS
+         * =================================================
+         *
+         * Day 25 used time-based matching.
+         *
+         * Day 26 uses the actual notification relationship.
+         */
 
-                long minutes =
-                        Duration.between(
-                                notification.getScheduledAt(),
-                                matchingExecution.getStartedAt()
-                        ).toMinutes();
+        List<TaskExecution> completedExecutions =
+                taskExecutionRepository
+                        .findByUserIdAndStatus(
+                                userId,
+                                TaskExecutionStatus.COMPLETED
+                        );
 
-                if (minutes >= 0) {
-                    totalMinutesToStart += minutes;
-                    measuredStarts++;
-                }
-            }
-        }
+
+        Set<UUID> actedNotificationIds =
+                new HashSet<>();
+
+
+        List<Long> responseTimes =
+                completedExecutions
+                        .stream()
+
+                        .filter(execution ->
+                                execution.getNotification() != null
+                        )
+
+                        .map(execution ->
+                                execution
+                                        .getNotification()
+                        )
+
+                        .filter(notification ->
+                                notification.getId() != null
+                        )
+
+                        .filter(notification ->
+                                actedNotificationIds.add(
+                                        notification.getId()
+                                )
+                        )
+
+                        .map(this::calculateResponseMinutes)
+                        .filter(minutes ->
+                                minutes >= 0
+                        )
+                        .toList();
+
+
+        long actedOnReminders =
+                actedNotificationIds.size();
+
+
+        /*
+         * =================================================
+         * RATES
+         * =================================================
+         */
 
         double readRate =
                 calculatePercentage(
@@ -98,115 +146,218 @@ public class NotificationBehaviorService {
                         totalReminders
                 );
 
+
         double actionRate =
                 calculatePercentage(
                         actedOnReminders,
                         totalReminders
                 );
 
+
+        /*
+         * =================================================
+         * AVERAGE RESPONSE TIME
+         * =================================================
+         */
+
         double averageMinutesToStart =
-                measuredStarts == 0
-                        ? 0
-                        : (double) totalMinutesToStart / measuredStarts;
+                responseTimes
+                        .stream()
+                        .mapToLong(
+                                Long::longValue
+                        )
+                        .average()
+                        .orElse(0.0);
+
+
+        /*
+         * =================================================
+         * INSIGHT
+         * =================================================
+         */
 
         String insight =
-                generateInsight(
+                buildInsight(
                         totalReminders,
-                        readRate,
-                        actionRate,
+                        readReminders,
+                        actedOnReminders,
                         averageMinutesToStart
                 );
 
+
         return new NotificationBehaviorInsightResponse(
+
                 totalReminders,
+
                 readReminders,
+
                 ignoredReminders,
+
                 actedOnReminders,
+
                 readRate,
+
                 actionRate,
-                averageMinutesToStart,
+
+                round(
+                        averageMinutesToStart
+                ),
+
                 insight
+
         );
+
     }
 
-    private TaskExecution findMatchingExecution(
-            Notification notification,
-            List<TaskExecution> executions
+
+    private long calculateResponseMinutes(
+            Notification notification
     ) {
 
-        Instant reminderTime = notification.getScheduledAt();
+        if (
+                notification.getScheduledAt() == null
+        ) {
 
-        Instant actionWindowEnd =
-                reminderTime.plus(
-                        Duration.ofMinutes(ACTION_WINDOW_MINUTES)
-                );
+            return -1;
 
-        return executions.stream()
+        }
+
+
+        /*
+         * Find the execution associated with this
+         * notification.
+         *
+         * There should normally be only one because
+         * correlation prevents reuse.
+         */
+        return taskExecutionRepository
+                .findByUserIdOrderByStartedAtDesc(
+                        notification.getUser().getId()
+                )
+                .stream()
+
                 .filter(execution ->
-                        execution.getStartedAt() != null
+                        execution.getNotification() != null
                 )
+
                 .filter(execution ->
-                        !execution.getStartedAt().isBefore(reminderTime)
+                        notification.getId()
+                                .equals(
+                                        execution
+                                                .getNotification()
+                                                .getId()
+                                )
                 )
-                .filter(execution ->
-                        !execution.getStartedAt().isAfter(actionWindowEnd)
+
+                .map(TaskExecution::getStartedAt)
+
+                .filter(startedAt ->
+                        startedAt != null
                 )
-                .min(
-                        java.util.Comparator.comparing(
-                                TaskExecution::getStartedAt
-                        )
+
+                .findFirst()
+
+                .map(startedAt ->
+                        Duration
+                                .between(
+                                        notification.getScheduledAt(),
+                                        startedAt
+                                )
+                                .toMinutes()
                 )
-                .orElse(null);
+
+                .orElse(-1L);
+
     }
+
 
     private double calculatePercentage(
             long numerator,
             long denominator
     ) {
 
-        if (denominator == 0) {
-            return 0;
+        if (
+                denominator == 0
+        ) {
+
+            return 0.0;
+
         }
 
-        return Math.round(
-                ((double) numerator / denominator) * 10000
-        ) / 100.0;
+
+        return round(
+                (numerator * 100.0) /
+                        denominator
+        );
+
     }
 
-    private String generateInsight(
+
+    private double round(
+            double value
+    ) {
+
+        return Math.round(
+                value * 100.0
+        ) / 100.0;
+
+    }
+
+
+    private String buildInsight(
             long totalReminders,
-            double readRate,
-            double actionRate,
+            long readReminders,
+            long actedOnReminders,
             double averageMinutesToStart
     ) {
 
-        if (totalReminders == 0) {
-            return "Not enough notification history yet.";
+        if (
+                totalReminders == 0
+        ) {
+
+            return "MindMate needs more reminder history before it can learn your notification behavior.";
+
         }
 
-        if (actionRate >= 70) {
 
-            if (averageMinutesToStart > 0) {
-                return String.format(
-                        "Your reminders are frequently followed by task execution. " +
-                                "Average time to start is %.1f minutes.",
-                        averageMinutesToStart
-                );
+        if (
+                actedOnReminders == 0
+        ) {
+
+            if (
+                    readReminders == 0
+            ) {
+
+                return "Your reminders have not been opened yet. MindMate needs more interaction data to learn your preferred reminder timing.";
+
             }
 
-            return "Your reminders are frequently followed by task execution.";
+
+            return "Some reminders have been opened, but none are yet linked to a task execution. MindMate needs more execution data to learn your reminder timing.";
+
         }
 
-        if (actionRate >= 40) {
 
-            return "Some reminders lead to task execution, but there is room to improve reminder timing.";
+        if (
+                averageMinutesToStart <= 5
+        ) {
+
+            return "You usually start tasks shortly after receiving reminders. A shorter reminder window may be sufficient.";
+
         }
 
-        if (readRate >= 70) {
 
-            return "You usually read reminders, but task execution often does not follow.";
+        if (
+                averageMinutesToStart <= 15
+        ) {
+
+            return "You usually start tasks fairly soon after receiving reminders. MindMate can use this pattern to refine future reminder timing.";
+
         }
 
-        return "Many reminders are not being acted on. MindMate can use this behavior to improve future reminder timing.";
+
+        return "Your reminder-to-execution timing varies. MindMate can use more execution history to improve future reminder timing.";
+
     }
+
 }

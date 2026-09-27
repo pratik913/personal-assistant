@@ -8,38 +8,66 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface TaskExecutionRepository extends JpaRepository<TaskExecution, UUID> {
+public interface TaskExecutionRepository
+        extends JpaRepository<TaskExecution, UUID> {
 
-    List<TaskExecution> findByTaskIdAndUserIdOrderByStartedAtDesc(
+
+    List<TaskExecution>
+    findByTaskIdAndUserIdOrderByStartedAtDesc(
             UUID taskId,
             UUID userId
     );
 
-    List<TaskExecution> findByTaskIdAndUserIdAndStatusOrderByStartedAtDesc(
+
+    List<TaskExecution>
+    findByTaskIdAndUserIdAndStatusOrderByStartedAtDesc(
             UUID taskId,
             UUID userId,
             TaskExecutionStatus status
     );
 
-    Optional<TaskExecution> findByIdAndTaskIdAndUserId(
+
+    Optional<TaskExecution>
+    findByIdAndTaskIdAndUserId(
             UUID executionId,
             UUID taskId,
             UUID userId
     );
 
-    boolean existsByTaskIdAndUserIdAndStatus(
+
+    boolean
+    existsByTaskIdAndUserIdAndStatus(
             UUID taskId,
             UUID userId,
             TaskExecutionStatus status
     );
 
-    List<TaskExecution> findByUserIdAndStatus(
+
+    List<TaskExecution>
+    findByUserIdOrderByStartedAtDesc(
+            UUID userId
+    );
+
+
+    List<TaskExecution>
+    findByUserIdAndStatus(
             UUID userId,
             TaskExecutionStatus status
     );
 
-    // ✅ ADD THIS
-    List<TaskExecution> findByUserIdOrderByStartedAtDesc(
-            UUID userId
+
+    /*
+     * =====================================================
+     * DAY 26
+     * =====================================================
+     *
+     * Prevents the same reminder from being linked to
+     * multiple task executions.
+     */
+
+    boolean
+    existsByNotificationId(
+            UUID notificationId
     );
+
 }

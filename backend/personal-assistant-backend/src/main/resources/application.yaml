@@ -1,6 +1,7 @@
 spring:
   application:
     name: personal-assistant-backend
+
   datasource:
     url: jdbc:postgresql://localhost:5432/personal_assistant
     username: postgres
@@ -16,3 +17,8 @@ server:
 
 jwt:
   secret: ${JWT_SECRET}
+
+aws:
+  region: ${AWS_REGION:ap-south-1}
+  s3:
+    bucket: ${AWS_S3_BUCKET}

@@ -1,1 +1,730 @@
-<p>settings works!</p>
+<div class="settings-page">
+
+  <div class="page-header">
+
+    <div>
+      <h1>Settings</h1>
+
+      <p>
+        Manage your account and preferences.
+      </p>
+    </div>
+
+  </div>
+
+
+  <div class="settings-layout">
+
+    <aside class="settings-sidebar">
+
+      <button
+        type="button"
+        class="settings-tab"
+        [class.active]="activeTab() === 'profile'"
+        (click)="setTab('profile')"
+      >
+        <span class="tab-icon">◉</span>
+        <span>Profile</span>
+      </button>
+
+      <button
+        type="button"
+        class="settings-tab"
+        [class.active]="activeTab() === 'preferences'"
+        (click)="setTab('preferences')"
+      >
+        <span class="tab-icon">⚙</span>
+        <span>Preferences</span>
+      </button>
+
+      <button
+        type="button"
+        class="settings-tab"
+        [class.active]="activeTab() === 'notifications'"
+        (click)="setTab('notifications')"
+      >
+        <span class="tab-icon">◌</span>
+        <span>Notifications</span>
+      </button>
+
+      <button
+        type="button"
+        class="settings-tab"
+        [class.active]="activeTab() === 'privacy'"
+        (click)="setTab('privacy')"
+      >
+        <span class="tab-icon">⌑</span>
+        <span>Privacy</span>
+      </button>
+
+    </aside>
+
+
+    <main class="settings-content">
+
+
+      <!-- PROFILE -->
+
+      @if (activeTab() === 'profile') {
+
+        <section class="settings-card">
+
+          <div class="section-heading">
+
+            <div>
+              <h2>Profile</h2>
+
+              <p>
+                Update your personal information.
+              </p>
+            </div>
+
+          </div>
+
+
+          @if (loadingProfile()) {
+
+            <div class="state-message">
+              Loading profile...
+            </div>
+
+          } @else {
+
+            <div class="profile-identity">
+
+              <div class="avatar">
+
+                @if (profileImageUrl()) {
+
+                  <img
+                    [src]="profileImageUrl()"
+                    alt="Profile picture"
+                  />
+
+                } @else {
+
+                  <span>
+                    {{ initials }}
+                  </span>
+
+                }
+
+              </div>
+
+
+              <div class="identity-info">
+
+                <h3>
+                  {{ profile.name || 'Your name' }}
+                </h3>
+
+                <p>
+                  {{ profile.email || 'Your email' }}
+                </p>
+
+                @if (profile.phoneNumber) {
+
+                  <p>
+                    {{ profile.phoneNumber }}
+                  </p>
+
+                }
+
+              </div>
+
+
+              <label class="secondary-button">
+
+                Change Photo
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  hidden
+                  (change)="onProfileImageSelected($event)"
+                />
+
+              </label>
+
+            </div>
+
+
+            <div class="form-grid">
+
+              <div class="form-field">
+
+                <label for="profile-name">
+                  Name
+                </label>
+
+                <input
+                  id="profile-name"
+                  type="text"
+                  [(ngModel)]="profile.name"
+                  placeholder="Your name"
+                />
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="profile-email">
+                  Email
+                </label>
+
+                <input
+                  id="profile-email"
+                  type="email"
+                  [(ngModel)]="profile.email"
+                  placeholder="you@example.com"
+                />
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="profile-phone">
+                  Mobile Number
+                </label>
+
+                <input
+                  id="profile-phone"
+                  type="tel"
+                  [(ngModel)]="profile.phoneNumber"
+                  placeholder="+919876543210"
+                />
+
+                <small>
+                  Use international format, e.g.
+                  +919876543210
+                </small>
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="profile-timezone">
+                  Timezone
+                </label>
+
+                <select
+                  id="profile-timezone"
+                  [(ngModel)]="profile.timezone"
+                >
+
+                  @for (
+                    timezone of timezoneOptions;
+                    track timezone
+                  ) {
+
+                    <option
+                      [value]="timezone"
+                    >
+                      {{ timezone }}
+                    </option>
+
+                  }
+
+                </select>
+
+              </div>
+
+            </div>
+
+
+            @if (profileError()) {
+
+              <div class="error-message">
+                {{ profileError() }}
+              </div>
+
+            }
+
+
+            @if (profileSuccess()) {
+
+              <div class="success-message">
+                {{ profileSuccess() }}
+              </div>
+
+            }
+
+
+            <div class="card-actions">
+
+              <button
+                type="button"
+                class="primary-button"
+                [disabled]="savingProfile()"
+                (click)="saveProfile()"
+              >
+
+                @if (savingProfile()) {
+                  Saving...
+                } @else {
+                  Save Changes
+                }
+
+              </button>
+
+            </div>
+
+          }
+
+        </section>
+
+      }
+
+
+      <!-- PREFERENCES -->
+
+      @if (activeTab() === 'preferences') {
+
+        <section class="settings-card">
+
+          <div class="section-heading">
+
+            <div>
+
+              <h2>Preferences</h2>
+
+              <p>
+                Customize how MindMate behaves.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          @if (loadingPreferences()) {
+
+            <div class="state-message">
+              Loading preferences...
+            </div>
+
+          } @else {
+
+            <div class="preference-section">
+
+              <div class="preference-copy">
+
+                <h3>Appearance</h3>
+
+                <p>
+                  Choose how MindMate looks.
+                </p>
+
+              </div>
+
+
+              <div class="segmented-control">
+
+                <button
+                  type="button"
+                  [class.selected]="preferences.theme === 'light'"
+                  (click)="preferences.theme = 'light'"
+                >
+                  Light
+                </button>
+
+                <button
+                  type="button"
+                  [class.selected]="preferences.theme === 'dark'"
+                  (click)="preferences.theme = 'dark'"
+                >
+                  Dark
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div class="preference-section">
+
+              <div class="preference-copy">
+
+                <h3>Planning Style</h3>
+
+                <p>
+                  Tell MindMate how you prefer
+                  your day to be planned.
+                </p>
+
+              </div>
+
+
+              <select
+                class="preference-select"
+                [(ngModel)]="preferences.planningStyle"
+              >
+
+                <option value="balanced">
+                  Balanced
+                </option>
+
+                <option value="focused">
+                  Focused
+                </option>
+
+                <option value="flexible">
+                  Flexible
+                </option>
+
+              </select>
+
+            </div>
+
+
+            @if (preferencesError()) {
+
+              <div class="error-message">
+                {{ preferencesError() }}
+              </div>
+
+            }
+
+
+            @if (preferencesSuccess()) {
+
+              <div class="success-message">
+                {{ preferencesSuccess() }}
+              </div>
+
+            }
+
+
+            <div class="card-actions">
+
+              <button
+                type="button"
+                class="primary-button"
+                [disabled]="savingPreferences()"
+                (click)="savePreferences()"
+              >
+
+                @if (savingPreferences()) {
+                  Saving...
+                } @else {
+                  Save Preferences
+                }
+
+              </button>
+
+            </div>
+
+          }
+
+        </section>
+
+      }
+
+
+      <!-- NOTIFICATIONS -->
+
+      @if (activeTab() === 'notifications') {
+
+        <section class="settings-card">
+
+          <div class="section-heading">
+
+            <div>
+
+              <h2>Notifications</h2>
+
+              <p>
+                Control when MindMate reminds you.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          @if (loadingNotifications()) {
+
+            <div class="state-message">
+              Loading notification settings...
+            </div>
+
+          } @else {
+
+            <div class="preference-section">
+
+              <div class="preference-copy">
+
+                <h3>Task Start Notifications</h3>
+
+                <p>
+                  Receive reminders before scheduled tasks.
+                </p>
+
+              </div>
+
+
+              <label class="toggle">
+
+                <input
+                  type="checkbox"
+                  [(ngModel)]="
+                    notifications.taskStartNotificationsEnabled
+                  "
+                />
+
+                <span></span>
+
+              </label>
+
+            </div>
+
+
+            <div class="preference-section">
+
+              <div class="preference-copy">
+
+                <h3>Reminder Timing</h3>
+
+                <p>
+                  How early should MindMate remind you?
+                </p>
+
+              </div>
+
+
+              <select
+                class="preference-select"
+                [(ngModel)]="notifications.reminderMinutes"
+              >
+
+                @for (
+                  minutes of reminderOptions;
+                  track minutes
+                ) {
+
+                  <option
+                    [ngValue]="minutes"
+                  >
+
+                    @if (minutes < 60) {
+                      {{ minutes }} minutes
+                    } @else if (minutes === 60) {
+                      1 hour
+                    } @else {
+                      {{ minutes / 60 }} hours
+                    }
+
+                  </option>
+
+                }
+
+              </select>
+
+            </div>
+
+
+            <div class="preference-section quiet-hours">
+
+              <div class="preference-copy">
+
+                <h3>Quiet Hours</h3>
+
+                <p>
+                  Avoid task reminders during selected hours.
+                </p>
+
+              </div>
+
+
+              <label class="toggle">
+
+                <input
+                  type="checkbox"
+                  [(ngModel)]="
+                    notifications.quietHoursEnabled
+                  "
+                />
+
+                <span></span>
+
+              </label>
+
+
+              @if (
+                notifications.quietHoursEnabled
+              ) {
+
+                <div class="quiet-hours-fields">
+
+                  <div class="form-field">
+
+                    <label>
+                      Start
+                    </label>
+
+                    <input
+                      type="time"
+                      [(ngModel)]="
+                        notifications.quietHoursStart
+                      "
+                    />
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label>
+                      End
+                    </label>
+
+                    <input
+                      type="time"
+                      [(ngModel)]="
+                        notifications.quietHoursEnd
+                      "
+                    />
+
+                  </div>
+
+                </div>
+
+              }
+
+            </div>
+
+
+            @if (notificationError()) {
+
+              <div class="error-message">
+                {{ notificationError() }}
+              </div>
+
+            }
+
+
+            @if (notificationSuccess()) {
+
+              <div class="success-message">
+                {{ notificationSuccess() }}
+              </div>
+
+            }
+
+
+            <div class="card-actions">
+
+              <button
+                type="button"
+                class="primary-button"
+                [disabled]="savingNotifications()"
+                (click)="saveNotificationPreferences()"
+              >
+
+                @if (savingNotifications()) {
+                  Saving...
+                } @else {
+                  Save Notification Settings
+                }
+
+              </button>
+
+            </div>
+
+          }
+
+        </section>
+
+      }
+
+
+      <!-- PRIVACY -->
+
+      @if (activeTab() === 'privacy') {
+
+        <section class="settings-card">
+
+          <div class="section-heading">
+
+            <div>
+
+              <h2>Privacy</h2>
+
+              <p>
+                Manage your MindMate account.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="privacy-item">
+
+            <div>
+
+              <h3>Account Data</h3>
+
+              <p>
+                Your tasks, goals, captures and
+                preferences are associated with
+                your MindMate account.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="privacy-item">
+
+            <div>
+
+              <h3>Profile Picture</h3>
+
+              <p>
+                Profile pictures are stored in
+                private object storage rather than
+                inside PostgreSQL.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="privacy-item danger-zone">
+
+            <div>
+
+              <h3>Sign Out</h3>
+
+              <p>
+                Sign out of your current MindMate session.
+              </p>
+
+            </div>
+
+
+            <button
+              type="button"
+              class="danger-button"
+              (click)="signOut()"
+            >
+              Sign Out
+            </button>
+
+          </div>
+
+        </section>
+
+      }
+
+    </main>
+
+  </div>
+
+</div>

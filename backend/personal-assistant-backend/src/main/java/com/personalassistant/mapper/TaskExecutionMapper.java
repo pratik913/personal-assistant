@@ -7,16 +7,32 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskExecutionMapper {
 
-    public TaskExecutionResponse toResponse(TaskExecution execution) {
+    public TaskExecutionResponse toResponse(
+            TaskExecution execution
+    ) {
 
         return new TaskExecutionResponse(
+
                 execution.getId(),
+
                 execution.getTask().getId(),
+
                 execution.getStartedAt(),
+
                 execution.getEndedAt(),
+
                 execution.getStatus(),
+
                 execution.getFeedback(),
-                execution.getCreatedAt()
+
+                execution.getCreatedAt(),
+
+                execution.getNotification() != null
+                        ? execution.getNotification().getId()
+                        : null
+
         );
+
     }
+
 }

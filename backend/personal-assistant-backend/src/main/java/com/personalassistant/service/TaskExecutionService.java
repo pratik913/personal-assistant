@@ -27,63 +27,177 @@ import java.util.UUID;
 public class TaskExecutionService {
 
     private final TaskExecutionRepository taskExecutionRepository;
+
     private final TaskRepository taskRepository;
+
     private final UserRepository userRepository;
+
     private final TaskExecutionMapper taskExecutionMapper;
+
+    private final NotificationCorrelationService
+            notificationCorrelationService;
+
 
     public TaskExecutionService(
             TaskExecutionRepository taskExecutionRepository,
             TaskRepository taskRepository,
             UserRepository userRepository,
-            TaskExecutionMapper taskExecutionMapper
+            TaskExecutionMapper taskExecutionMapper,
+            NotificationCorrelationService
+                    notificationCorrelationService
     ) {
-        this.taskExecutionRepository = taskExecutionRepository;
-        this.taskRepository = taskRepository;
-        this.userRepository = userRepository;
-        this.taskExecutionMapper = taskExecutionMapper;
+
+        this.taskExecutionRepository =
+                taskExecutionRepository;
+
+        this.taskRepository =
+                taskRepository;
+
+        this.userRepository =
+                userRepository;
+
+        this.taskExecutionMapper =
+                taskExecutionMapper;
+
+        this.notificationCorrelationService =
+                notificationCorrelationService;
+
     }
+
+
+    /*
+     * =====================================================
+     * START EXECUTION
+     * =====================================================
+     */
 
     public TaskExecutionResponse startExecution(
             UUID taskId,
             UUID userId,
             CreateTaskExecutionRequest request
     ) {
-        Task task = getOwnedTask(taskId, userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new UserNotFoundException("User not found")
-                );
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() ->
+                                new UserNotFoundException(
+                                        "User not found."
+                                )
+                        );
 
-        boolean activeExecutionExists =
-                taskExecutionRepository.existsByTaskIdAndUserIdAndStatus(
-                        taskId,
-                        userId,
-                        TaskExecutionStatus.STARTED
-                );
 
-        if (activeExecutionExists) {
+        Task task =
+                taskRepository
+                        .findByIdAndUserId(
+                                taskId,
+                                userId
+                        )
+                        .orElseThrow(() ->
+                                new TaskNotFoundException(
+                                        "Task not found."
+                                )
+                        );
+
+
+        /*
+         * Prevent multiple active executions
+         * for the same task.
+         */
+        boolean alreadyRunning =
+                taskExecutionRepository
+                        .existsByTaskIdAndUserIdAndStatus(
+                                taskId,
+                                userId,
+                                TaskExecutionStatus.STARTED
+                        );
+
+
+        if (alreadyRunning) {
+
             throw new ConflictException(
-                    "Task already has an active execution"
+                    "This task already has an active execution."
             );
+
         }
 
-        TaskExecution execution = new TaskExecution();
+
+        Instant startedAt =
+                Instant.now();
+
+
+        TaskExecution execution =
+                new TaskExecution();
+
 
         execution.setTask(task);
-        execution.setUser(user);
-        execution.setStartedAt(Instant.now());
-        execution.setStatus(TaskExecutionStatus.STARTED);
 
-        if (request != null) {
-            execution.setFeedback(request.feedback());
+        execution.setUser(user);
+
+        execution.setStartedAt(
+                startedAt
+        );
+
+        execution.setStatus(
+                TaskExecutionStatus.STARTED
+        );
+
+
+        if (
+                request != null &&
+                        request.feedback() != null
+        ) {
+
+            execution.setFeedback(
+                    request.feedback()
+            );
+
         }
 
-        TaskExecution savedExecution =
-                taskExecutionRepository.save(execution);
 
-        return taskExecutionMapper.toResponse(savedExecution);
+        /*
+         * =================================================
+         * DAY 26
+         * =================================================
+         *
+         * Try to associate the execution with the
+         * notification that preceded it.
+         *
+         * This is deliberately best-effort.
+         *
+         * Starting a task must NEVER fail simply because
+         * notification correlation is unavailable.
+         */
+
+        notificationCorrelationService
+                .findNotificationForExecution(
+                        userId,
+                        taskId,
+                        startedAt
+                )
+                .ifPresent(
+                        execution::setNotification
+                );
+
+
+        TaskExecution saved =
+                taskExecutionRepository.save(
+                        execution
+                );
+
+
+        return taskExecutionMapper.toResponse(
+                saved
+        );
+
     }
+
+
+    /*
+     * =====================================================
+     * UPDATE EXECUTION
+     * =====================================================
+     */
 
     public TaskExecutionResponse updateExecution(
             UUID taskId,
@@ -91,7 +205,6 @@ public class TaskExecutionService {
             UUID userId,
             UpdateTaskExecutionRequest request
     ) {
-        getOwnedTask(taskId, userId);
 
         TaskExecution execution =
                 taskExecutionRepository
@@ -101,35 +214,96 @@ public class TaskExecutionService {
                                 userId
                         )
                         .orElseThrow(() ->
-                                new TaskNotFoundException(
-                                        "Task execution not found"
+                                new IllegalStateException(
+                                        "Task execution not found."
                                 )
                         );
 
-        if (request.status() != null) {
 
-            execution.setStatus(request.status());
+        if (
+                request.status() != null
+        ) {
 
-            if (request.status() == TaskExecutionStatus.COMPLETED
-                    || request.status() == TaskExecutionStatus.CANCELLED) {
+            execution.setStatus(
+                    request.status()
+            );
 
-                execution.setEndedAt(Instant.now());
+        }
+
+
+        if (
+                request.feedback() != null
+        ) {
+
+            execution.setFeedback(
+                    request.feedback()
+            );
+
+        }
+
+
+        /*
+         * Set endedAt when execution finishes.
+         */
+        if (
+                request.status() ==
+                        TaskExecutionStatus.COMPLETED ||
+                        request.status() ==
+                                TaskExecutionStatus.CANCELLED
+        ) {
+
+            if (
+                    execution.getEndedAt() == null
+            ) {
+
+                execution.setEndedAt(
+                        Instant.now()
+                );
+
             }
+
         }
 
-        if (request.feedback() != null) {
-            execution.setFeedback(request.feedback());
-        }
 
-        return taskExecutionMapper.toResponse(execution);
+        TaskExecution saved =
+                taskExecutionRepository.save(
+                        execution
+                );
+
+
+        return taskExecutionMapper.toResponse(
+                saved
+        );
+
     }
+
+
+    /*
+     * =====================================================
+     * HISTORY
+     * =====================================================
+     */
 
     @Transactional(readOnly = true)
     public List<TaskExecutionResponse> getExecutions(
             UUID taskId,
             UUID userId
     ) {
-        getOwnedTask(taskId, userId);
+
+        /*
+         * Ownership check.
+         */
+        taskRepository
+                .findByIdAndUserId(
+                        taskId,
+                        userId
+                )
+                .orElseThrow(() ->
+                        new TaskNotFoundException(
+                                "Task not found."
+                        )
+                );
+
 
         return taskExecutionRepository
                 .findByTaskIdAndUserIdOrderByStartedAtDesc(
@@ -137,42 +311,43 @@ public class TaskExecutionService {
                         userId
                 )
                 .stream()
-                .map(taskExecutionMapper::toResponse)
+                .map(
+                        taskExecutionMapper::toResponse
+                )
                 .toList();
+
     }
 
-    /**
-     * Calculates the actual duration of a completed execution.
-     *
-     * The duration is calculated by the application using the
-     * persisted start and end timestamps. We do not ask the AI
-     * to calculate this value.
+
+    /*
+     * =====================================================
+     * ACTUAL EXECUTION DURATION
+     * =====================================================
      */
-    private long calculateActualMinutes(
+
+    public long calculateActualMinutes(
             TaskExecution execution
     ) {
-        if (execution.getEndedAt() == null) {
+
+        if (
+                execution.getStartedAt() == null ||
+                        execution.getEndedAt() == null
+        ) {
+
             throw new IllegalStateException(
-                    "Execution must be completed before analysis."
+                    "Execution has not been completed."
             );
+
         }
 
-        return Duration.between(
-                execution.getStartedAt(),
-                execution.getEndedAt()
-        ).toMinutes();
+
+        return Duration
+                .between(
+                        execution.getStartedAt(),
+                        execution.getEndedAt()
+                )
+                .toMinutes();
+
     }
 
-    private Task getOwnedTask(
-            UUID taskId,
-            UUID userId
-    ) {
-        return taskRepository
-                .findByIdAndUserId(taskId, userId)
-                .orElseThrow(() ->
-                        new TaskNotFoundException(
-                                "Task not found"
-                        )
-                );
-    }
 }

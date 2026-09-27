@@ -10,33 +10,34 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
-public class User {
+@Table(
+        name = "user_preferences",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_user_preferences_user_id",
+                        columnNames = "user_id"
+                )
+        }
+)
+public class UserPreference {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private String name;
-
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
-    @Column(length = 20)
-    private String phoneNumber;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true
+    )
+    private User user;
 
     @Column(nullable = false)
-    private boolean phoneNumberVerified = false;
+    private String theme = "light";
 
     @Column(nullable = false)
-    private String timezone;
-
-    @Column(name = "profile_image_key")
-    private String profileImageKey;
+    private String planningStyle = "balanced";
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
