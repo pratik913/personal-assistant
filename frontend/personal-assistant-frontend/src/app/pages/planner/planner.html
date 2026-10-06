@@ -80,7 +80,7 @@
           type="date"
           [min]="today"
           [(ngModel)]="planningDate"
-          [disabled]="isGenerating"
+          [disabled]="isGenerating || isApplying"
         />
 
       </div>
@@ -99,7 +99,7 @@
           name="availableFrom"
           type="time"
           [(ngModel)]="availableFrom"
-          [disabled]="isGenerating"
+          [disabled]="isGenerating || isApplying"
         />
 
       </div>
@@ -118,7 +118,7 @@
           name="availableUntil"
           type="time"
           [(ngModel)]="availableUntil"
-          [disabled]="isGenerating"
+          [disabled]="isGenerating || isApplying"
         />
 
       </div>
@@ -129,7 +129,7 @@
       <button
         type="button"
         class="primary-button generate-button"
-        [disabled]="isGenerating"
+        [disabled]="isGenerating || isApplying"
         (click)="generatePlan()"
       >
 
@@ -291,6 +291,7 @@
       @if (planItems.length > 0) {
 
         <div class="plan-summary">
+
 
           <div class="summary-item">
 
@@ -454,9 +455,7 @@
                   <div class="timeline-card-header">
 
                     <div class="task-number">
-
                       {{ index + 1 }}
-
                     </div>
 
 
@@ -523,6 +522,124 @@
 
 
       <!-- ================================================= -->
+      <!-- APPLY ERROR -->
+      <!-- ================================================= -->
+
+      @if (applyErrorMessage) {
+
+        <div class="planner-message planner-error">
+
+          <div class="message-icon">
+            !
+          </div>
+
+          <div>
+
+            <strong>
+              Unable to apply plan
+            </strong>
+
+            <p>
+              {{ applyErrorMessage }}
+            </p>
+
+          </div>
+
+        </div>
+
+      }
+
+
+      <!-- ================================================= -->
+      <!-- APPLY SUCCESS -->
+      <!-- ================================================= -->
+
+      @if (applySuccessMessage) {
+
+        <div class="planner-message planner-success">
+
+          <div class="message-icon">
+            ✓
+          </div>
+
+          <div>
+
+            <strong>
+              Plan added to your schedule
+            </strong>
+
+            <p>
+              {{ applySuccessMessage }}
+            </p>
+
+          </div>
+
+        </div>
+
+      }
+
+
+      <!-- ================================================= -->
+      <!-- PLAN ACTION -->
+      <!-- ================================================= -->
+
+      @if (planItems.length > 0) {
+
+        <div class="plan-action-area">
+
+          @if (!isPlanApplied) {
+
+            <button
+              type="button"
+              class="primary-button generate-button"
+              [disabled]="isApplying || isGenerating"
+              (click)="applyPlan()"
+            >
+
+              @if (isApplying) {
+
+                <span class="button-spinner"></span>
+
+                <span>
+                  Adding to Schedule...
+                </span>
+
+              } @else {
+
+                <span class="generate-icon">
+                  ✓
+                </span>
+
+                <span>
+                  Apply Plan to Schedule
+                </span>
+
+              }
+
+            </button>
+
+          } @else {
+
+            <div class="plan-applied-state">
+
+              <span class="footer-icon">
+                ✓
+              </span>
+
+              <span>
+                Plan is already in your schedule
+              </span>
+
+            </div>
+
+          }
+
+        </div>
+
+      }
+
+
+      <!-- ================================================= -->
       <!-- PLAN FOOTER -->
       <!-- ================================================= -->
 
@@ -536,20 +653,38 @@
 
           <div>
 
-            <strong>
-              Your day is planned.
-            </strong>
+            @if (isPlanApplied) {
 
-            <p>
-              Follow the schedule and let MindMate
-              learn from your execution.
-            </p>
+              <strong>
+                Your day is scheduled.
+              </strong>
+
+              <p>
+                MindMate added the planned tasks to
+                your schedule. Follow the schedule and
+                let MindMate learn from your execution.
+              </p>
+
+            } @else {
+
+              <strong>
+                Review your plan before scheduling.
+              </strong>
+
+              <p>
+                This is an AI-generated proposal.
+                Review the timeline, then apply it to
+                your schedule when you're ready.
+              </p>
+
+            }
 
           </div>
 
         </footer>
 
       }
+
 
     </section>
 

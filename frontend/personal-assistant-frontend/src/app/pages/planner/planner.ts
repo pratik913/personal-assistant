@@ -1,16 +1,21 @@
 import { CommonModule } from '@angular/common';
+
 import {
   ChangeDetectorRef,
   Component,
   NgZone,
   inject
 } from '@angular/core';
+
 import {
   HttpClient,
   HttpErrorResponse
 } from '@angular/common/http';
+
 import { FormsModule } from '@angular/forms';
+
 import { RouterLink } from '@angular/router';
+
 import { firstValueFrom } from 'rxjs';
 
 interface PlannerItem {
@@ -24,21 +29,30 @@ interface PlannerItem {
 interface PlannerData {
   planningDate: string;
   items: PlannerItem[];
+
+  // The backend returns planningDate + items.
+  // These are populated client-side so the existing
+  // template can continue displaying the selected
+  // planning window.
+  availableFrom?: string;
+  availableUntil?: string;
 }
 
-interface AiPlanResponse {
-  id: string;
-  summary: string;
-  plan: PlannerData;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface DailyPlannerResponse {
+interface CreateDailyPlanRequest {
   planningDate: string;
   availableFrom: string;
   availableUntil: string;
-  plan: AiPlanResponse;
+}
+
+interface ApplyDailyPlanRequest {
+  items: PlannerItem[];
+}
+
+interface ScheduleEntryResponse {
+  id: string;
+  taskId: string;
+  startAt: string;
+  endAt: string;
 }
 
 @Component({
@@ -56,12 +70,17 @@ export class Planner {
 
   private readonly http = inject(HttpClient);
 
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly cdr =
+    inject(ChangeDetectorRef);
 
-  private readonly ngZone = inject(NgZone);
+  private readonly ngZone =
+    inject(NgZone);
 
   private readonly plannerUrl =
-    'http://localhost:8080/api/daily-planner/generate';
+    'http://localhost:8080/api/planner/daily';
+
+  private readonly applyPlannerUrl =
+    'http://localhost:8080/api/planner/daily/apply';
 
 
   // =========================================================
@@ -81,11 +100,20 @@ export class Planner {
   // STATE
   // =========================================================
 
-  plan: DailyPlannerResponse | null = null;
+  plan: PlannerData | null = null;
 
   isGenerating = false;
 
+  isApplying = false;
+
   errorMessage = '';
+
+  applyErrorMessage = '';
+
+  applySuccessMessage = '';
+
+  appliedScheduleEntries:
+    ScheduleEntryResponse[] = [];
 
 
   // =========================================================
@@ -95,7 +123,7 @@ export class Planner {
   get planItems(): PlannerItem[] {
 
     const items =
-      this.plan?.plan?.plan?.items ?? [];
+      this.plan?.items ?? [];
 
     return [...items].sort(
       (first, second) => {
@@ -110,13 +138,34 @@ export class Planner {
 
   get planSummary(): string {
 
-    return this.plan?.plan?.summary ?? '';
+    if (!this.plan) {
+      return '';
+    }
+
+    if (this.planItems.length === 0) {
+      return 'No tasks fit within the selected planning window.';
+    }
+
+    return `${this.planItems.length} task${
+      this.planItems.length === 1 ? '' : 's'
+    } selected using your tasks, schedule and planning history.`;
   }
 
 
   get hasPlan(): boolean {
-
     return this.plan !== null;
+  }
+
+
+  get hasPlanItems(): boolean {
+    return this.planItems.length > 0;
+  }
+
+
+  get isPlanApplied(): boolean {
+    return (
+      this.appliedScheduleEntries.length > 0
+    );
   }
 
 
@@ -126,16 +175,25 @@ export class Planner {
 
   async generatePlan(): Promise<void> {
 
-    if (this.isGenerating) {
+    if (
+      this.isGenerating ||
+      this.isApplying
+    ) {
       return;
     }
 
 
     // -------------------------------------------------------
-    // Reset previous errors
+    // Reset previous state
     // -------------------------------------------------------
 
     this.errorMessage = '';
+
+    this.applyErrorMessage = '';
+
+    this.applySuccessMessage = '';
+
+    this.appliedScheduleEntries = [];
 
 
     // -------------------------------------------------------
@@ -224,42 +282,38 @@ export class Planner {
     try {
 
       // -----------------------------------------------------
+      // REQUEST BODY
+      // -----------------------------------------------------
+
+      const request:
+        CreateDailyPlanRequest = {
+
+        planningDate:
+          this.planningDate,
+
+        availableFrom:
+          this.availableFrom,
+
+        availableUntil:
+          this.availableUntil
+      };
+
+
+      // -----------------------------------------------------
       // HTTP REQUEST
       // -----------------------------------------------------
 
       const response =
         await firstValueFrom(
-          this.http.post<DailyPlannerResponse>(
+          this.http.post<PlannerData>(
             this.plannerUrl,
-            null,
-            {
-              params: {
-                planningDate:
-                  this.planningDate,
-
-                availableFrom:
-                  this.availableFrom,
-
-                availableUntil:
-                  this.availableUntil
-              }
-            }
+            request
           )
         );
 
 
       // -----------------------------------------------------
-      // IMPORTANT
-      // -----------------------------------------------------
-      //
-      // The backend response has this structure:
-      //
-      // response
-      //   └── plan
-      //        ├── summary
-      //        └── plan
-      //             └── items[]
-      //
+      // RESPONSE DEBUGGING
       // -----------------------------------------------------
 
       console.log(
@@ -267,10 +321,9 @@ export class Planner {
         response
       );
 
-
       console.log(
         '[MindMate Planner] Items:',
-        response?.plan?.plan?.items
+        response?.items
       );
 
 
@@ -280,7 +333,13 @@ export class Planner {
 
       this.ngZone.run(() => {
 
-        this.plan = response;
+        this.plan = {
+          ...response,
+          availableFrom:
+            this.availableFrom,
+          availableUntil:
+            this.availableUntil
+        };
 
         this.isGenerating = false;
 
@@ -314,23 +373,17 @@ export class Planner {
 
       });
 
+
     } finally {
 
       // -----------------------------------------------------
       // FINAL SAFETY NET
       // -----------------------------------------------------
-      //
-      // Even if something unexpected happens,
-      // the loading state cannot remain stuck.
-      //
-      // -----------------------------------------------------
 
       this.ngZone.run(() => {
 
         if (!this.plan) {
-
           this.isGenerating = false;
-
         }
 
         this.refreshView();
@@ -338,7 +391,158 @@ export class Planner {
       });
 
     }
+  }
 
+
+  // =========================================================
+  // APPLY PLAN TO SCHEDULE
+  // =========================================================
+
+  async applyPlan(): Promise<void> {
+
+    if (
+      this.isApplying ||
+      this.isGenerating ||
+      !this.plan ||
+      this.planItems.length === 0
+    ) {
+      return;
+    }
+
+
+    // -------------------------------------------------------
+    // Reset apply state
+    // -------------------------------------------------------
+
+    this.applyErrorMessage = '';
+
+    this.applySuccessMessage = '';
+
+    this.appliedScheduleEntries = [];
+
+
+    // -------------------------------------------------------
+    // Start applying state
+    // -------------------------------------------------------
+
+    this.isApplying = true;
+
+    this.refreshView();
+
+
+    console.log(
+      '[MindMate Planner] Applying plan...'
+    );
+
+    console.log(
+      '[MindMate Planner] Apply request:',
+      {
+        planningDate:
+          this.planningDate,
+
+        availableFrom:
+          this.availableFrom,
+
+        availableUntil:
+          this.availableUntil,
+
+        items:
+          this.planItems
+      }
+    );
+
+
+    try {
+
+      // -----------------------------------------------------
+      // REQUEST BODY
+      // -----------------------------------------------------
+
+      const request:
+        ApplyDailyPlanRequest = {
+        items:
+          this.planItems
+      };
+
+
+      // -----------------------------------------------------
+      // APPLY REQUEST
+      // -----------------------------------------------------
+
+      const response =
+        await firstValueFrom(
+          this.http.post<ScheduleEntryResponse[]>(
+            this.applyPlannerUrl,
+            request
+          )
+        );
+
+
+      console.log(
+        '[MindMate Planner] Plan applied:',
+        response
+      );
+
+
+      // -----------------------------------------------------
+      // ENTER ANGULAR ZONE
+      // -----------------------------------------------------
+
+      this.ngZone.run(() => {
+
+        this.appliedScheduleEntries =
+          response ?? [];
+
+        this.isApplying = false;
+
+        this.applyErrorMessage = '';
+
+        this.applySuccessMessage =
+          'Your plan has been added to your schedule.';
+
+        this.refreshView();
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        '[MindMate Planner] Failed to apply plan:',
+        error
+      );
+
+
+      this.ngZone.run(() => {
+
+        this.isApplying = false;
+
+        this.appliedScheduleEntries = [];
+
+        this.applySuccessMessage = '';
+
+        this.applyErrorMessage =
+          this.getErrorMessage(
+            error,
+            'Unable to apply your plan to the schedule.'
+          );
+
+        this.refreshView();
+
+      });
+
+
+    } finally {
+
+      this.ngZone.run(() => {
+
+        this.isApplying = false;
+
+        this.refreshView();
+
+      });
+
+    }
   }
 
 
@@ -366,7 +570,6 @@ export class Planner {
     ) {
 
       return '--:--';
-
     }
 
 
@@ -377,7 +580,6 @@ export class Planner {
         minute: '2-digit'
       }
     ).format(date);
-
   }
 
 
@@ -408,7 +610,6 @@ export class Planner {
 
 
     return `${year}-${month}-${day}`;
-
   }
 
 
@@ -422,7 +623,6 @@ export class Planner {
   ): string {
 
     return item.taskId;
-
   }
 
 
@@ -431,7 +631,9 @@ export class Planner {
   // =========================================================
 
   private getErrorMessage(
-    error: unknown
+    error: unknown,
+    fallbackMessage =
+      'Unable to generate your daily plan.'
   ): string {
 
     if (
@@ -445,7 +647,6 @@ export class Planner {
       ) {
 
         return error.error.message;
-
       }
 
 
@@ -455,7 +656,6 @@ export class Planner {
       ) {
 
         return error.error;
-
       }
 
 
@@ -465,9 +665,7 @@ export class Planner {
       ) {
 
         return error.message;
-
       }
-
     }
 
 
@@ -477,14 +675,10 @@ export class Planner {
     ) {
 
       return error.message;
-
     }
 
 
-    return (
-      'Unable to generate your daily plan.'
-    );
-
+    return fallbackMessage;
   }
 
 
@@ -492,7 +686,7 @@ export class Planner {
   // FORCE VIEW UPDATE
   // =========================================================
 
-  private refreshView(): void {
+  refreshView(): void {
 
     this.cdr.detectChanges();
 

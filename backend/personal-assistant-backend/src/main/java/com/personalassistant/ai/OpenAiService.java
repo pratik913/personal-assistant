@@ -13,8 +13,7 @@ import com.personalassistant.exception.AiProcessingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Duration;
 
 @Service
 public class OpenAiService implements AiService {
@@ -130,9 +129,20 @@ public class OpenAiService implements AiService {
             );
         }
 
+        /*
+         * Keep AI requests bounded.
+         *
+         * Without an explicit timeout/retry policy, an AI request can remain
+         * pending for a very long time from the application's perspective.
+         *
+         * The planner is a user-facing request, so a bounded request is
+         * preferable to leaving the Angular UI stuck on "Generating...".
+         */
         this.client = OpenAIOkHttpClient
                 .builder()
                 .apiKey(apiKey)
+                .timeout(Duration.ofSeconds(90))
+                .maxRetries(0)
                 .build();
     }
 
@@ -188,6 +198,18 @@ public class OpenAiService implements AiService {
 
         try {
 
+            System.out.println(
+                    "[MindMate AI] Starting daily plan generation."
+            );
+
+            System.out.println(
+                    "[MindMate AI] Planning context length: "
+                            + (planningContext == null
+                            ? 0
+                            : planningContext.length())
+                            + " characters."
+            );
+
             StructuredResponseCreateParams<AiPlanData> params =
                     ResponseCreateParams.builder()
                             .input("""
@@ -203,26 +225,49 @@ public class OpenAiService implements AiService {
                             .text(AiPlanData.class)
                             .build();
 
-            return client.responses()
-                    .create(params)
-                    .output()
-                    .stream()
-                    .flatMap(item -> item.message().stream())
-                    .flatMap(message -> message.content().stream())
-                    .flatMap(contentItem -> contentItem.outputText().stream())
-                    .findFirst()
-                    .orElseThrow(() ->
-                            new AiProcessingException(
-                                    AiErrorType.INVALID_RESPONSE,
-                                    "AI returned an invalid planning response."
-                            )
-                    );
+            System.out.println(
+                    "[MindMate AI] Sending daily plan request to OpenAI."
+            );
+
+            var response =
+                    client.responses()
+                            .create(params);
+
+            System.out.println(
+                    "[MindMate AI] OpenAI daily plan response received."
+            );
+
+            AiPlanData plan =
+                    response
+                            .output()
+                            .stream()
+                            .flatMap(item -> item.message().stream())
+                            .flatMap(message -> message.content().stream())
+                            .flatMap(contentItem -> contentItem.outputText().stream())
+                            .findFirst()
+                            .orElseThrow(() ->
+                                    new AiProcessingException(
+                                            AiErrorType.INVALID_RESPONSE,
+                                            "AI returned an invalid planning response."
+                                    )
+                            );
+
+            System.out.println(
+                    "[MindMate AI] Daily plan parsed successfully."
+            );
+
+            return plan;
 
         } catch (AiProcessingException exception) {
 
             throw exception;
 
         } catch (RuntimeException exception) {
+
+            System.err.println(
+                    "[MindMate AI] Daily plan generation failed: "
+                            + exception.getMessage()
+            );
 
             throw classifyException(exception);
         }

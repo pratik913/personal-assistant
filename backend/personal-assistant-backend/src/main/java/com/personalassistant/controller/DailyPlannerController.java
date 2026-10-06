@@ -1,23 +1,20 @@
 package com.personalassistant.controller;
 
-import com.personalassistant.dto.DailyPlannerResponse;
+import com.personalassistant.dto.AiPlanData;
+import com.personalassistant.dto.ApplyDailyPlanRequest;
+import com.personalassistant.dto.CreateDailyPlanRequest;
+import com.personalassistant.dto.ScheduleEntryResponse;
 import com.personalassistant.service.DailyPlannerService;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/daily-planner")
+@RequestMapping("/api/planner")
 public class DailyPlannerController {
 
     private final DailyPlannerService dailyPlannerService;
@@ -25,15 +22,13 @@ public class DailyPlannerController {
     public DailyPlannerController(
             DailyPlannerService dailyPlannerService
     ) {
-        this.dailyPlannerService = dailyPlannerService;
+        this.dailyPlannerService =
+                dailyPlannerService;
     }
 
-    @PostMapping("/generate")
-    @ResponseStatus(HttpStatus.CREATED)
-    public DailyPlannerResponse generatePlan(
-            @RequestParam LocalDate planningDate,
-            @RequestParam LocalTime availableFrom,
-            @RequestParam LocalTime availableUntil,
+    @PostMapping("/daily")
+    public ResponseEntity<AiPlanData> generateDailyPlan(
+            @Valid @RequestBody CreateDailyPlanRequest request,
             Authentication authentication
     ) {
 
@@ -42,11 +37,38 @@ public class DailyPlannerController {
                         authentication.getName()
                 );
 
-        return dailyPlannerService.generateDailyPlan(
-                userId,
-                planningDate,
-                availableFrom,
-                availableUntil
+        AiPlanData plan =
+                dailyPlannerService
+                        .generateDailyPlan(
+                                userId,
+                                request
+                        );
+
+        return ResponseEntity.ok(
+                plan
+        );
+    }
+
+    @PostMapping("/daily/apply")
+    public ResponseEntity<List<ScheduleEntryResponse>> applyDailyPlan(
+            @Valid @RequestBody ApplyDailyPlanRequest request,
+            Authentication authentication
+    ) {
+
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
+
+        List<ScheduleEntryResponse> entries =
+                dailyPlannerService
+                        .applyDailyPlan(
+                                userId,
+                                request
+                        );
+
+        return ResponseEntity.ok(
+                entries
         );
     }
 }
