@@ -20,11 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -306,12 +302,50 @@ public class DailyPlannerService {
 
 
         // -----------------------------------------------------
-        // Load existing schedule
+        // Revalidate the original planning window
+        // -----------------------------------------------------
+
+        validatePlanningWindow(
+                request.planningDate(),
+                request.availableFrom(),
+                request.availableUntil()
+        );
+
+
+        User user =
+                getUser(userId);
+
+
+        ZoneId zoneId =
+                getUserZone(user);
+
+
+        Instant availableFrom =
+                toInstant(
+                        request.planningDate(),
+                        request.availableFrom(),
+                        zoneId
+                );
+
+        Instant availableUntil =
+                toInstant(
+                        request.planningDate(),
+                        request.availableUntil(),
+                        zoneId
+                );
+
+
+        // -----------------------------------------------------
+        // Load existing schedule for the requested date
         // -----------------------------------------------------
 
         List<ScheduleEntry> existingSchedule =
-                scheduleEntryRepository
-                        .findByUserId(userId);
+                filterScheduleForPlanningDate(
+                        scheduleEntryRepository
+                                .findByUserId(userId),
+                        request.planningDate(),
+                        zoneId
+                );
 
 
         // -----------------------------------------------------
@@ -384,7 +418,9 @@ public class DailyPlannerService {
         validateAppliedItems(
                 request.items(),
                 taskMap,
-                existingSchedule
+                existingSchedule,
+                availableFrom,
+                availableUntil
         );
 
 
@@ -838,7 +874,9 @@ public class DailyPlannerService {
     private void validateAppliedItems(
             List<AiPlanItem> items,
             Map<UUID, Task> taskMap,
-            List<ScheduleEntry> existingSchedule
+            List<ScheduleEntry> existingSchedule,
+            Instant availableFrom,
+            Instant availableUntil
     ) {
 
         for (AiPlanItem item : items) {
@@ -875,49 +913,15 @@ public class DailyPlannerService {
 
 
             // -------------------------------------------------
-            // Time validation
+            // Time, planning-window and duration validation
             // -------------------------------------------------
 
-            if (item.startAt() == null
-                    || item.endAt() == null) {
-
-                throw badRequest(
-                        "Every plan item requires startAt and endAt."
-                );
-            }
-
-
-            if (!item.endAt().isAfter(
-                    item.startAt()
-            )) {
-
-                throw badRequest(
-                        "Plan item endAt must be after startAt."
-                );
-            }
-
-
-            // -------------------------------------------------
-            // Duration validation
-            // -------------------------------------------------
-
-            if (task.getEstimatedMinutes() != null) {
-
-                long plannedMinutes =
-                        Duration.between(
-                                item.startAt(),
-                                item.endAt()
-                        ).toMinutes();
-
-
-                if (plannedMinutes >
-                        task.getEstimatedMinutes()) {
-
-                    throw badRequest(
-                            "A planned task exceeds its estimated duration."
-                    );
-                }
-            }
+            validatePlanTime(
+                    item,
+                    task,
+                    availableFrom,
+                    availableUntil
+            );
         }
 
 
@@ -956,7 +960,7 @@ public class DailyPlannerService {
                 || item.endAt() == null) {
 
             throw badRequest(
-                    "AI returned a plan item without valid times."
+                    "Plan item requires valid startAt and endAt."
             );
         }
 
@@ -966,7 +970,7 @@ public class DailyPlannerService {
         )) {
 
             throw badRequest(
-                    "AI returned an invalid time range."
+                    "Plan item endAt must be after startAt."
             );
         }
 
@@ -983,7 +987,7 @@ public class DailyPlannerService {
         )) {
 
             throw badRequest(
-                    "AI scheduled a task outside the available window."
+                    "Plan item is outside the available planning window."
             );
         }
 
@@ -1002,7 +1006,7 @@ public class DailyPlannerService {
         if (plannedMinutes <= 0) {
 
             throw badRequest(
-                    "AI returned a zero-length task."
+                    "Plan item must have a positive duration."
             );
         }
 
@@ -1020,7 +1024,7 @@ public class DailyPlannerService {
                 task.getEstimatedMinutes()) {
 
             throw badRequest(
-                    "AI scheduled more time than the task estimate."
+                    "Plan item exceeds the task estimated duration."
             );
         }
     }
@@ -1228,7 +1232,21 @@ public class DailyPlannerService {
         }
 
 
-        if (request.planningDate() == null) {
+        validatePlanningWindow(
+                request.planningDate(),
+                request.availableFrom(),
+                request.availableUntil()
+        );
+    }
+
+
+    private void validatePlanningWindow(
+            LocalDate planningDate,
+            LocalTime availableFrom,
+            LocalTime availableUntil
+    ) {
+
+        if (planningDate == null) {
 
             throw badRequest(
                     "Planning date is required."
@@ -1236,7 +1254,7 @@ public class DailyPlannerService {
         }
 
 
-        if (request.availableFrom() == null) {
+        if (availableFrom == null) {
 
             throw badRequest(
                     "Available-from time is required."
@@ -1244,7 +1262,7 @@ public class DailyPlannerService {
         }
 
 
-        if (request.availableUntil() == null) {
+        if (availableUntil == null) {
 
             throw badRequest(
                     "Available-until time is required."
@@ -1252,10 +1270,7 @@ public class DailyPlannerService {
         }
 
 
-        if (!request.availableUntil()
-                .isAfter(
-                        request.availableFrom()
-                )) {
+        if (!availableUntil.isAfter(availableFrom)) {
 
             throw badRequest(
                     "availableUntil must be after availableFrom."
