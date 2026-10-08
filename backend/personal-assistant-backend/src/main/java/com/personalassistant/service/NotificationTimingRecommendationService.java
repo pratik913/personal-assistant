@@ -27,11 +27,7 @@ public class NotificationTimingRecommendationService {
 
     private static final int HIGH_CONFIDENCE_EXECUTIONS = 6;
 
-    /*
-     * Day 25 recommendation ceiling.
-     */
     private static final int MAX_RECOMMENDED_REMINDER_MINUTES = 120;
-
 
     private final NotificationPreferenceRepository
             notificationPreferenceRepository;
@@ -39,22 +35,18 @@ public class NotificationTimingRecommendationService {
     private final TaskExecutionRepository
             taskExecutionRepository;
 
-
     public NotificationTimingRecommendationService(
             NotificationPreferenceRepository
                     notificationPreferenceRepository,
             TaskExecutionRepository
                     taskExecutionRepository
     ) {
-
         this.notificationPreferenceRepository =
                 notificationPreferenceRepository;
 
         this.taskExecutionRepository =
                 taskExecutionRepository;
-
     }
-
 
     public NotificationTimingRecommendationResponse
     getRecommendation(
@@ -66,15 +58,11 @@ public class NotificationTimingRecommendationService {
                         .findByUserId(userId)
                         .orElse(null);
 
-
         int currentReminderMinutes =
-                preference != null &&
-                        preference.getReminderMinutes() != null
-
+                preference != null
+                        && preference.getReminderMinutes() != null
                         ? preference.getReminderMinutes()
-
                         : DEFAULT_REMINDER_MINUTES;
-
 
         /*
          * =================================================
@@ -90,48 +78,36 @@ public class NotificationTimingRecommendationService {
                         )
                         .stream()
                         .filter(execution ->
+                                execution.getNotification() != null
+                        )
+                        .filter(execution ->
                                 execution.getNotification()
-                                        != null
+                                        .getType()
+                                        == com.personalassistant.entity.NotificationType.TASK_STARTING
                         )
                         .toList();
-
 
         List<Long> responseTimes =
                 executions
                         .stream()
                         .map(this::calculateResponseMinutes)
-                        .filter(minutes ->
-                                minutes >= 0
-                        )
+                        .filter(minutes -> minutes >= 0)
                         .toList();
-
 
         long executionCount =
                 responseTimes.size();
 
-
-        if (
-                executionCount == 0
-        ) {
+        if (executionCount == 0) {
 
             return new NotificationTimingRecommendationResponse(
-
                     currentReminderMinutes,
-
                     currentReminderMinutes,
-
                     0,
-
                     0.0,
-
                     RecommendationConfidence.NONE,
-
                     "MindMate needs more notification-to-execution history before it can recommend a better reminder time."
-
             );
-
         }
-
 
         double averageMinutesToStart =
                 responseTimes
@@ -140,19 +116,17 @@ public class NotificationTimingRecommendationService {
                         .average()
                         .orElse(0.0);
 
-
         RecommendationConfidence confidence =
                 determineConfidence(
                         executionCount
                 );
 
-
         int recommendedReminderMinutes =
                 calculateRecommendedReminder(
+                        currentReminderMinutes,
                         averageMinutesToStart,
                         confidence
                 );
-
 
         String reason =
                 buildReason(
@@ -160,27 +134,15 @@ public class NotificationTimingRecommendationService {
                         confidence
                 );
 
-
         return new NotificationTimingRecommendationResponse(
-
                 currentReminderMinutes,
-
                 recommendedReminderMinutes,
-
                 executionCount,
-
-                round(
-                        averageMinutesToStart
-                ),
-
+                round(averageMinutesToStart),
                 confidence,
-
                 reason
-
         );
-
     }
-
 
     private long calculateResponseMinutes(
             TaskExecution execution
@@ -189,17 +151,11 @@ public class NotificationTimingRecommendationService {
         Notification notification =
                 execution.getNotification();
 
-
-        if (
-                notification == null ||
-                        notification.getScheduledAt() == null ||
-                        execution.getStartedAt() == null
-        ) {
-
+        if (notification == null
+                || notification.getScheduledAt() == null
+                || execution.getStartedAt() == null) {
             return -1;
-
         }
-
 
         Duration responseTime =
                 Duration.between(
@@ -207,162 +163,124 @@ public class NotificationTimingRecommendationService {
                         execution.getStartedAt()
                 );
 
-
-        if (
-                responseTime.isNegative()
-        ) {
-
+        if (responseTime.isNegative()) {
             return -1;
-
         }
 
-
         return responseTime.toMinutes();
-
     }
-
 
     private RecommendationConfidence determineConfidence(
             long executionCount
     ) {
 
-        if (
-                executionCount >=
-                        HIGH_CONFIDENCE_EXECUTIONS
-        ) {
+        if (executionCount >= HIGH_CONFIDENCE_EXECUTIONS) {
 
             return RecommendationConfidence.HIGH;
-
         }
 
-
-        if (
-                executionCount >=
-                        MEDIUM_CONFIDENCE_EXECUTIONS
-        ) {
+        if (executionCount >= MEDIUM_CONFIDENCE_EXECUTIONS) {
 
             return RecommendationConfidence.MEDIUM;
-
         }
 
-
-        if (
-                executionCount >=
-                        LOW_CONFIDENCE_EXECUTIONS
-        ) {
+        if (executionCount >= LOW_CONFIDENCE_EXECUTIONS) {
 
             return RecommendationConfidence.LOW;
-
         }
 
-
         return RecommendationConfidence.NONE;
-
     }
 
-
     private int calculateRecommendedReminder(
+            int currentReminderMinutes,
             double averageMinutesToStart,
             RecommendationConfidence confidence
     ) {
 
         int recommendation;
 
-
-        if (
-                averageMinutesToStart <= 5
-        ) {
+        if (averageMinutesToStart <= 5) {
 
             recommendation = 10;
 
-        } else if (
-                averageMinutesToStart <= 15
-        ) {
+        } else if (averageMinutesToStart <= 15) {
 
             recommendation = 15;
 
-        } else if (
-                averageMinutesToStart <= 30
-        ) {
+        } else if (averageMinutesToStart <= 30) {
 
             recommendation = 30;
 
-        } else if (
-                averageMinutesToStart <= 60
-        ) {
+        } else if (averageMinutesToStart <= 60) {
 
             recommendation = 45;
 
-        } else if (
-                averageMinutesToStart <= 120
-        ) {
+        } else if (averageMinutesToStart <= 120) {
 
             recommendation = 60;
 
         } else {
 
             recommendation = 120;
-
         }
 
+        recommendation =
+                Math.min(
+                        recommendation,
+                        MAX_RECOMMENDED_REMINDER_MINUTES
+                );
 
         /*
-         * With very little history, avoid making a
-         * large change based on a single execution.
+         * With only one correlated execution, do not make
+         * the full recommendation. Move halfway from the
+         * current setting toward the observed recommendation.
          */
-        if (
-                confidence == RecommendationConfidence.LOW
-        ) {
+        if (confidence == RecommendationConfidence.LOW) {
 
-            return recommendation;
-
+            return roundToInt(
+                    (currentReminderMinutes + recommendation)
+                            / 2.0
+            );
         }
 
-
-        return Math.min(
-                recommendation,
-                MAX_RECOMMENDED_REMINDER_MINUTES
-        );
-
+        return recommendation;
     }
 
+    private int roundToInt(
+            double value
+    ) {
+
+        return (int) Math.round(value);
+    }
 
     private String buildReason(
             double averageMinutesToStart,
             RecommendationConfidence confidence
     ) {
 
-        if (
-                averageMinutesToStart <= 5
-        ) {
+        if (confidence == RecommendationConfidence.LOW) {
+
+            return "MindMate has limited notification history, so it is making a conservative reminder-time recommendation based on your current setting and observed behavior.";
+        }
+
+        if (averageMinutesToStart <= 5) {
 
             return "You usually start tasks shortly after receiving reminders. A shorter reminder window may be sufficient.";
-
         }
 
-
-        if (
-                averageMinutesToStart <= 15
-        ) {
+        if (averageMinutesToStart <= 15) {
 
             return "You usually start tasks fairly soon after receiving reminders. MindMate can use this pattern to refine future reminder timing.";
-
         }
 
-
-        if (
-                averageMinutesToStart <= 30
-        ) {
+        if (averageMinutesToStart <= 30) {
 
             return "You tend to start tasks within about half an hour of reminders. MindMate can use this pattern for future reminder timing.";
-
         }
 
-
         return "Your task executions usually happen later after reminders. A longer reminder window may give you more useful preparation time.";
-
     }
-
 
     private double round(
             double value
@@ -371,7 +289,5 @@ public class NotificationTimingRecommendationService {
         return Math.round(
                 value * 100.0
         ) / 100.0;
-
     }
-
 }

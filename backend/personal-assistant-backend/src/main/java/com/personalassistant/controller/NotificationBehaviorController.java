@@ -1,5 +1,6 @@
 package com.personalassistant.controller;
 
+import com.personalassistant.dto.NotificationBehaviorInsightResponse;
 import com.personalassistant.dto.NotificationTimingRecommendationResponse;
 import com.personalassistant.service.NotificationBehaviorService;
 import com.personalassistant.service.NotificationTimingRecommendationService;
@@ -15,30 +16,47 @@ import java.util.UUID;
 public class NotificationBehaviorController {
 
     private final NotificationBehaviorService notificationBehaviorService;
-    private final NotificationTimingRecommendationService notificationTimingRecommendationService;
+
+    private final NotificationTimingRecommendationService
+            notificationTimingRecommendationService;
 
     public NotificationBehaviorController(
             NotificationBehaviorService notificationBehaviorService,
-            NotificationTimingRecommendationService notificationTimingRecommendationService
+            NotificationTimingRecommendationService
+                    notificationTimingRecommendationService
     ) {
-        this.notificationBehaviorService = notificationBehaviorService;
-        this.notificationTimingRecommendationService = notificationTimingRecommendationService;
+        this.notificationBehaviorService =
+                notificationBehaviorService;
+
+        this.notificationTimingRecommendationService =
+                notificationTimingRecommendationService;
     }
 
     @GetMapping
-    public Object getInsights(Authentication authentication) {
-
-        UUID userId = UUID.fromString(authentication.getName());
-
-        return notificationBehaviorService.getInsights(userId);
-    }
-
-    @GetMapping("/recommendation")
-    public NotificationTimingRecommendationResponse getTimingRecommendation(
+    public NotificationBehaviorInsightResponse getInsights(
             Authentication authentication
     ) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
+
+        return notificationBehaviorService.getInsights(
+                userId
+        );
+    }
+
+    @GetMapping("/recommendation")
+    public NotificationTimingRecommendationResponse
+    getTimingRecommendation(
+            Authentication authentication
+    ) {
+
+        UUID userId =
+                UUID.fromString(
+                        authentication.getName()
+                );
 
         return notificationTimingRecommendationService
                 .getRecommendation(userId);

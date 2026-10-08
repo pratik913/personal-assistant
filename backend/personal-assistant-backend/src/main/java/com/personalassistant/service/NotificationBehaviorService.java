@@ -13,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -26,20 +28,13 @@ public class NotificationBehaviorService {
 
     private final TaskExecutionRepository taskExecutionRepository;
 
-
     public NotificationBehaviorService(
             NotificationRepository notificationRepository,
             TaskExecutionRepository taskExecutionRepository
     ) {
-
-        this.notificationRepository =
-                notificationRepository;
-
-        this.taskExecutionRepository =
-                taskExecutionRepository;
-
+        this.notificationRepository = notificationRepository;
+        this.taskExecutionRepository = taskExecutionRepository;
     }
-
 
     public NotificationBehaviorInsightResponse getInsights(
             UUID userId
@@ -58,34 +53,31 @@ public class NotificationBehaviorService {
                                 NotificationType.TASK_STARTING
                         );
 
-
-        long totalReminders =
-                notifications.size();
-
+        long totalReminders = notifications.size();
 
         long readReminders =
                 notifications
                         .stream()
                         .filter(notification ->
-                                notification.getStatus() ==
-                                        NotificationStatus.READ
+                                notification.getStatus()
+                                        == NotificationStatus.READ
                         )
                         .count();
 
-
         long ignoredReminders =
-                totalReminders -
-                        readReminders;
-
+                totalReminders - readReminders;
 
         /*
          * =================================================
          * CORRELATED EXECUTIONS
          * =================================================
          *
-         * Day 25 used time-based matching.
+         * The execution already contains the notification
+         * relationship.
          *
-         * Day 26 uses the actual notification relationship.
+         * Build the notification -> execution start lookup
+         * once instead of querying the database again for
+         * every notification.
          */
 
         List<TaskExecution> completedExecutions =
@@ -95,44 +87,88 @@ public class NotificationBehaviorService {
                                 TaskExecutionStatus.COMPLETED
                         );
 
-
         Set<UUID> actedNotificationIds =
                 new HashSet<>();
 
+        Map<UUID, Instant> notificationExecutionStarts =
+                new HashMap<>();
+
+        for (TaskExecution execution : completedExecutions) {
+
+            Notification notification =
+                    execution.getNotification();
+
+            if (notification == null
+                    || notification.getId() == null
+                    || execution.getStartedAt() == null) {
+                continue;
+            }
+
+            /*
+             * Only TASK_STARTING notifications are considered
+             * reminder actions.
+             */
+            if (notification.getType()
+                    != NotificationType.TASK_STARTING) {
+                continue;
+            }
+
+            UUID notificationId =
+                    notification.getId();
+
+            actedNotificationIds.add(notificationId);
+
+            /*
+             * Notification correlation should normally
+             * guarantee one execution per notification.
+             *
+             * Keep the earliest execution if malformed or
+             * legacy data ever contains duplicates.
+             */
+            notificationExecutionStarts.merge(
+                    notificationId,
+                    execution.getStartedAt(),
+                    (existing, candidate) ->
+                            existing.isBefore(candidate)
+                                    ? existing
+                                    : candidate
+            );
+        }
+
+        /*
+         * =================================================
+         * RESPONSE TIMES
+         * =================================================
+         */
 
         List<Long> responseTimes =
-                completedExecutions
+                notifications
                         .stream()
-
-                        .filter(execution ->
-                                execution.getNotification() != null
-                        )
-
-                        .map(execution ->
-                                execution
-                                        .getNotification()
-                        )
-
                         .filter(notification ->
                                 notification.getId() != null
                         )
-
                         .filter(notification ->
-                                actedNotificationIds.add(
-                                        notification.getId()
-                                )
+                                notificationExecutionStarts
+                                        .containsKey(
+                                                notification.getId()
+                                        )
                         )
+                        .map(notification -> {
 
-                        .map(this::calculateResponseMinutes)
-                        .filter(minutes ->
-                                minutes >= 0
-                        )
+                            Instant startedAt =
+                                    notificationExecutionStarts
+                                            .get(notification.getId());
+
+                            return calculateResponseMinutes(
+                                    notification,
+                                    startedAt
+                            );
+                        })
+                        .filter(minutes -> minutes >= 0)
                         .toList();
-
 
         long actedOnReminders =
                 actedNotificationIds.size();
-
 
         /*
          * =================================================
@@ -146,13 +182,11 @@ public class NotificationBehaviorService {
                         totalReminders
                 );
 
-
         double actionRate =
                 calculatePercentage(
                         actedOnReminders,
                         totalReminders
                 );
-
 
         /*
          * =================================================
@@ -163,12 +197,9 @@ public class NotificationBehaviorService {
         double averageMinutesToStart =
                 responseTimes
                         .stream()
-                        .mapToLong(
-                                Long::longValue
-                        )
+                        .mapToLong(Long::longValue)
                         .average()
                         .orElse(0.0);
-
 
         /*
          * =================================================
@@ -184,114 +215,55 @@ public class NotificationBehaviorService {
                         averageMinutesToStart
                 );
 
-
         return new NotificationBehaviorInsightResponse(
-
                 totalReminders,
-
                 readReminders,
-
                 ignoredReminders,
-
                 actedOnReminders,
-
                 readRate,
-
                 actionRate,
-
-                round(
-                        averageMinutesToStart
-                ),
-
+                round(averageMinutesToStart),
                 insight
-
         );
-
     }
-
 
     private long calculateResponseMinutes(
-            Notification notification
+            Notification notification,
+            Instant executionStartedAt
     ) {
 
-        if (
-                notification.getScheduledAt() == null
-        ) {
-
+        if (notification.getScheduledAt() == null
+                || executionStartedAt == null) {
             return -1;
-
         }
 
+        Duration responseTime =
+                Duration.between(
+                        notification.getScheduledAt(),
+                        executionStartedAt
+                );
 
-        /*
-         * Find the execution associated with this
-         * notification.
-         *
-         * There should normally be only one because
-         * correlation prevents reuse.
-         */
-        return taskExecutionRepository
-                .findByUserIdOrderByStartedAtDesc(
-                        notification.getUser().getId()
-                )
-                .stream()
+        if (responseTime.isNegative()) {
+            return -1;
+        }
 
-                .filter(execution ->
-                        execution.getNotification() != null
-                )
-
-                .filter(execution ->
-                        notification.getId()
-                                .equals(
-                                        execution
-                                                .getNotification()
-                                                .getId()
-                                )
-                )
-
-                .map(TaskExecution::getStartedAt)
-
-                .filter(startedAt ->
-                        startedAt != null
-                )
-
-                .findFirst()
-
-                .map(startedAt ->
-                        Duration
-                                .between(
-                                        notification.getScheduledAt(),
-                                        startedAt
-                                )
-                                .toMinutes()
-                )
-
-                .orElse(-1L);
-
+        return responseTime.toMinutes();
     }
-
 
     private double calculatePercentage(
             long numerator,
             long denominator
     ) {
 
-        if (
-                denominator == 0
-        ) {
-
+        if (denominator == 0) {
             return 0.0;
-
         }
 
-
         return round(
-                (numerator * 100.0) /
-                        denominator
+                (numerator * 100.0)
+                        / denominator
         );
-
     }
-
 
     private double round(
             double value
@@ -300,9 +272,7 @@ public class NotificationBehaviorService {
         return Math.round(
                 value * 100.0
         ) / 100.0;
-
     }
-
 
     private String buildInsight(
             long totalReminders,
@@ -311,53 +281,31 @@ public class NotificationBehaviorService {
             double averageMinutesToStart
     ) {
 
-        if (
-                totalReminders == 0
-        ) {
+        if (totalReminders == 0) {
 
             return "MindMate needs more reminder history before it can learn your notification behavior.";
-
         }
 
+        if (actedOnReminders == 0) {
 
-        if (
-                actedOnReminders == 0
-        ) {
-
-            if (
-                    readReminders == 0
-            ) {
+            if (readReminders == 0) {
 
                 return "Your reminders have not been opened yet. MindMate needs more interaction data to learn your preferred reminder timing.";
-
             }
 
-
             return "Some reminders have been opened, but none are yet linked to a task execution. MindMate needs more execution data to learn your reminder timing.";
-
         }
 
-
-        if (
-                averageMinutesToStart <= 5
-        ) {
+        if (averageMinutesToStart <= 5) {
 
             return "You usually start tasks shortly after receiving reminders. A shorter reminder window may be sufficient.";
-
         }
 
-
-        if (
-                averageMinutesToStart <= 15
-        ) {
+        if (averageMinutesToStart <= 15) {
 
             return "You usually start tasks fairly soon after receiving reminders. MindMate can use this pattern to refine future reminder timing.";
-
         }
 
-
         return "Your reminder-to-execution timing varies. MindMate can use more execution history to improve future reminder timing.";
-
     }
-
 }
