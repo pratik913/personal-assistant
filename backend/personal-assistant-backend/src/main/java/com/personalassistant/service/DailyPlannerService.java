@@ -1123,38 +1123,53 @@ public class DailyPlannerService {
     // =========================================================
     // FILTER SCHEDULE BY PLANNING DATE
     // =========================================================
-
-    private List<ScheduleEntry>
-    filterScheduleForPlanningDate(
+    private List<ScheduleEntry> filterScheduleForPlanningDate(
             List<ScheduleEntry> scheduleEntries,
             LocalDate planningDate,
             ZoneId zoneId
     ) {
+        Instant dayStart = planningDate
+                .atStartOfDay(zoneId)
+                .toInstant();
+
+        Instant nextDayStart = planningDate
+                .plusDays(1)
+                .atStartOfDay(zoneId)
+                .toInstant();
 
         return scheduleEntries
                 .stream()
-                .filter(entry ->
-                        isOnPlanningDate(
-                                entry,
-                                planningDate,
-                                zoneId
-                        )
-                )
+                .filter(entry -> overlapsPlanningDate(
+                        entry,
+                        dayStart,
+                        nextDayStart
+                ))
                 .toList();
     }
-
-
-    private boolean isOnPlanningDate(
+    private boolean overlapsPlanningDate(
             ScheduleEntry entry,
-            LocalDate planningDate,
-            ZoneId zoneId
+            Instant dayStart,
+            Instant nextDayStart
     ) {
+        if (entry == null) {
+            return false;
+        }
 
-        return entry.getStartAt()
-                .atZone(zoneId)
-                .toLocalDate()
-                .equals(planningDate);
+        Instant entryStart = entry.getStartAt();
+        Instant entryEnd = entry.getEndAt();
+
+        if (entryStart == null || entryEnd == null || !entryEnd.isAfter(entryStart)) {
+            return false;
+        }
+
+        // Half-open interval overlap: [entryStart, entryEnd) intersects
+        // [dayStart, nextDayStart). This includes overnight entries that
+        // started before the planning date but continue into that date.
+        return entryStart.isBefore(nextDayStart)
+                && entryEnd.isAfter(dayStart);
     }
+
+
 
 
     // =========================================================

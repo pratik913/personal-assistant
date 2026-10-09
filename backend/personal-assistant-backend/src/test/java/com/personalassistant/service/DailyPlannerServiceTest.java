@@ -1,4 +1,4 @@
-package com.personalassistant.service;
+    package com.personalassistant.service;
 
 import com.personalassistant.ai.AiService;
 import com.personalassistant.dto.AiPlanData;
@@ -13,6 +13,9 @@ import com.personalassistant.entity.User;
 import com.personalassistant.repository.ScheduleEntryRepository;
 import com.personalassistant.repository.TaskRepository;
 import com.personalassistant.repository.UserRepository;
+import com.personalassistant.service.DailyPlannerService;
+import com.personalassistant.service.ScheduleEntryService;
+import com.personalassistant.service.SmartPlanningContextService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -997,4 +1000,110 @@ class DailyPlannerServiceTest {
                 )
                 .toInstant();
     }
+
+
+    @Test
+    void generateDailyPlan_shouldRejectPreviousDayOvernightScheduleConflict() {
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
+        when(user.getTimezone()).thenReturn("Asia/Kolkata");
+
+        when(task.getId()).thenReturn(taskId);
+        when(task.getStatus()).thenReturn(TaskStatus.TODO);
+        when(task.getEstimatedMinutes()).thenReturn(60);
+
+        when(taskRepository.findByUserIdAndStatusNot(
+                eq(userId),
+                eq(TaskStatus.COMPLETED)
+        )).thenReturn(List.of(task));
+
+        stubSmartPlanningContext();
+
+        CreateDailyPlanRequest request = validPlanningRequest();
+
+        ScheduleEntry overnightEntry =
+                org.mockito.Mockito.mock(ScheduleEntry.class);
+
+        // October 6, 11 PM in Asia/Kolkata.
+        when(overnightEntry.getStartAt())
+                .thenReturn(Instant.parse("2026-10-06T17:30:00Z"));
+
+        // October 7, 9:30 AM in Asia/Kolkata.
+        when(overnightEntry.getEndAt())
+                .thenReturn(Instant.parse("2026-10-07T04:00:00Z"));
+
+        Task scheduledTask =
+                org.mockito.Mockito.mock(Task.class);
+
+        when(overnightEntry.getTask()).thenReturn(scheduledTask);
+        when(scheduledTask.getId()).thenReturn(UUID.randomUUID());
+        when(scheduledTask.getTitle()).thenReturn("Overnight task");
+
+        when(scheduleEntryRepository.findByUserId(userId))
+                .thenReturn(List.of(overnightEntry));
+
+        AiPlanData aiPlan = new AiPlanData(
+                planningDate,
+                List.of(planItem(taskId, "09:00", "10:00"))
+        );
+
+        when(aiService.generatePlan(any())).thenReturn(aiPlan);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> dailyPlannerService.generateDailyPlan(
+                        userId,
+                        request
+                )
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+    }
+
+    @Test
+    void applyDailyPlan_shouldRejectPreviousDayOvernightScheduleConflict() {
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
+        when(user.getTimezone()).thenReturn("Asia/Kolkata");
+
+        when(taskRepository.findByUserId(userId))
+                .thenReturn(List.of(task));
+
+        when(task.getId()).thenReturn(taskId);
+        when(task.getStatus()).thenReturn(TaskStatus.TODO);
+        when(task.getEstimatedMinutes()).thenReturn(60);
+
+        ScheduleEntry overnightEntry =
+                org.mockito.Mockito.mock(ScheduleEntry.class);
+
+        when(overnightEntry.getStartAt())
+                .thenReturn(Instant.parse("2026-10-06T17:30:00Z"));
+
+        when(overnightEntry.getEndAt())
+                .thenReturn(Instant.parse("2026-10-07T04:00:00Z"));
+
+        when(scheduleEntryRepository.findByUserId(userId))
+                .thenReturn(List.of(overnightEntry));
+
+        ApplyDailyPlanRequest request = new ApplyDailyPlanRequest(
+                planningDate,
+                LocalTime.of(9, 0),
+                LocalTime.of(18, 0),
+                List.of(planItem(taskId, "09:00", "10:00"))
+        );
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> dailyPlannerService.applyDailyPlan(
+                        userId,
+                        request
+                )
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+
+        verify(scheduleEntryService, never())
+                .createScheduleEntry(any(), any());
+    }
+
 }
