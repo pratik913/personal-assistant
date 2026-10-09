@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import static org.mockito.Mockito.verifyNoInteractions;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -63,6 +63,8 @@ class NotificationCorrelationServiceTest {
         verify(taskExecutionRepository)
                 .existsByNotificationId(notification.getId());
     }
+
+
 
     @Test
     void findNotificationForExecution_whenNoCandidates_returnsEmpty() {
@@ -283,4 +285,40 @@ class NotificationCorrelationServiceTest {
 
         return notification;
     }
+
+    @Test
+    void findNotificationForExecution_whenReadAtEqualsExecutionStart_acceptsCandidate() {
+        Notification notification = notificationMinutesBeforeExecution(10);
+        notification.setReadAt(STARTED_AT);
+
+        givenCandidates(notification);
+
+        Optional<Notification> result =
+                service.findNotificationForExecution(
+                        USER_ID,
+                        TASK_ID,
+                        STARTED_AT
+                );
+
+        assertTrue(result.isPresent());
+        assertEquals(notification.getId(), result.get().getId());
+    }
+
+    @Test
+    void findNotificationForExecution_whenStartedAtIsNull_returnsEmptyWithoutQuerying() {
+        Optional<Notification> result =
+                service.findNotificationForExecution(
+                        USER_ID,
+                        TASK_ID,
+                        null
+                );
+
+        assertTrue(result.isEmpty());
+
+        verifyNoInteractions(
+                notificationRepository,
+                taskExecutionRepository
+        );
+    }
+
 }

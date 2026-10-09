@@ -68,7 +68,9 @@ public class NotificationCorrelationService {
             UUID taskId,
             Instant startedAt
     ) {
-
+        if (startedAt == null) {
+            return Optional.empty();
+        }
         List<Notification> candidates =
                 notificationRepository
                         .findByTaskIdAndUserIdAndTypeAndStatusAndScheduledAtLessThanEqualOrderByScheduledAtDesc(
