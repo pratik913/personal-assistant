@@ -157,7 +157,7 @@ public class TaskExecutionService {
 
         /*
          * =================================================
-         * DAY 26
+         * NOTIFICATION CORRELATION
          * =================================================
          *
          * Try to associate the execution with the
@@ -169,15 +169,29 @@ public class TaskExecutionService {
          * notification correlation is unavailable.
          */
 
-        notificationCorrelationService
-                .findNotificationForExecution(
-                        userId,
-                        taskId,
-                        startedAt
-                )
-                .ifPresent(
-                        execution::setNotification
-                );
+        try {
+
+            notificationCorrelationService
+                    .findNotificationForExecution(
+                            userId,
+                            taskId,
+                            startedAt
+                    )
+                    .ifPresent(
+                            execution::setNotification
+                    );
+
+        } catch (RuntimeException ignored) {
+
+            /*
+             * Notification correlation is intelligence,
+             * not a hard dependency for task execution.
+             *
+             * If correlation fails, execution should
+             * continue normally.
+             */
+
+        }
 
 
         TaskExecution saved =
@@ -220,9 +234,30 @@ public class TaskExecutionService {
                         );
 
 
+        if (request == null) {
+
+            throw new IllegalArgumentException(
+                    "Execution update request cannot be null."
+            );
+
+        }
+
+
+        /*
+         * =================================================
+         * STATUS TRANSITION VALIDATION
+         * =================================================
+         */
+
         if (
                 request.status() != null
         ) {
+
+            validateStatusTransition(
+                    execution.getStatus(),
+                    request.status()
+            );
+
 
             execution.setStatus(
                     request.status()
@@ -230,6 +265,12 @@ public class TaskExecutionService {
 
         }
 
+
+        /*
+         * =================================================
+         * FEEDBACK
+         * =================================================
+         */
 
         if (
                 request.feedback() != null
@@ -243,8 +284,11 @@ public class TaskExecutionService {
 
 
         /*
-         * Set endedAt when execution finishes.
+         * =================================================
+         * COMPLETION / CANCELLATION
+         * =================================================
          */
+
         if (
                 request.status() ==
                         TaskExecutionStatus.COMPLETED ||
@@ -252,15 +296,21 @@ public class TaskExecutionService {
                                 TaskExecutionStatus.CANCELLED
         ) {
 
-            if (
-                    execution.getEndedAt() == null
-            ) {
+            Instant endedAt =
+                    execution.getEndedAt() != null
+                            ? execution.getEndedAt()
+                            : Instant.now();
 
-                execution.setEndedAt(
-                        Instant.now()
-                );
 
-            }
+            validateExecutionTimes(
+                    execution.getStartedAt(),
+                    endedAt
+            );
+
+
+            execution.setEndedAt(
+                    endedAt
+            );
 
         }
 
@@ -293,6 +343,7 @@ public class TaskExecutionService {
         /*
          * Ownership check.
          */
+
         taskRepository
                 .findByIdAndUserId(
                         taskId,
@@ -330,6 +381,17 @@ public class TaskExecutionService {
     ) {
 
         if (
+                execution == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Execution cannot be null."
+            );
+
+        }
+
+
+        if (
                 execution.getStartedAt() == null ||
                         execution.getEndedAt() == null
         ) {
@@ -341,12 +403,177 @@ public class TaskExecutionService {
         }
 
 
+        validateExecutionTimes(
+                execution.getStartedAt(),
+                execution.getEndedAt()
+        );
+
+
         return Duration
                 .between(
                         execution.getStartedAt(),
                         execution.getEndedAt()
                 )
                 .toMinutes();
+
+    }
+
+
+    /*
+     * =====================================================
+     * STATUS TRANSITION VALIDATION
+     * =====================================================
+     *
+     * Valid lifecycle:
+     *
+     * STARTED
+     *    ↓
+     * COMPLETED
+     *
+     * STARTED
+     *    ↓
+     * CANCELLED
+     *
+     * Terminal states cannot be changed again.
+     */
+
+    private void validateStatusTransition(
+            TaskExecutionStatus currentStatus,
+            TaskExecutionStatus requestedStatus
+    ) {
+
+        if (
+                currentStatus == null
+        ) {
+
+            throw new IllegalStateException(
+                    "Current execution status is missing."
+            );
+
+        }
+
+
+        if (
+                requestedStatus == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Execution status is required."
+            );
+
+        }
+
+
+        /*
+         * Same status is allowed for idempotent updates.
+         */
+
+        if (
+                currentStatus == requestedStatus
+        ) {
+
+            return;
+
+        }
+
+
+        /*
+         * STARTED can transition only to
+         * COMPLETED or CANCELLED.
+         */
+
+        if (
+                currentStatus ==
+                        TaskExecutionStatus.STARTED
+        ) {
+
+            if (
+                    requestedStatus ==
+                            TaskExecutionStatus.COMPLETED ||
+                            requestedStatus ==
+                                    TaskExecutionStatus.CANCELLED
+            ) {
+
+                return;
+
+            }
+
+        }
+
+
+        /*
+         * COMPLETED and CANCELLED are terminal.
+         */
+
+        throw new IllegalStateException(
+                "Invalid execution status transition: "
+                        + currentStatus
+                        + " -> "
+                        + requestedStatus
+        );
+
+    }
+
+
+    /*
+     * =====================================================
+     * EXECUTION TIME VALIDATION
+     * =====================================================
+     */
+
+    private void validateExecutionTimes(
+            Instant startedAt,
+            Instant endedAt
+    ) {
+
+        if (
+                startedAt == null ||
+                        endedAt == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Execution start and end times are required."
+            );
+
+        }
+
+
+        if (
+                endedAt.isBefore(
+                        startedAt
+                )
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Execution end time cannot be before start time."
+            );
+
+        }
+
+
+        long minutes =
+                Duration
+                        .between(
+                                startedAt,
+                                endedAt
+                        )
+                        .toMinutes();
+
+
+        /*
+         * Prevent corrupted execution history from
+         * influencing adaptive planning.
+         */
+
+        if (
+                minutes > 8 * 60
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Execution duration cannot exceed 8 hours."
+            );
+
+        }
 
     }
 
