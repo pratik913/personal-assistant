@@ -179,6 +179,74 @@ class NotificationTimingRecommendationServiceTest {
     }
 
     @Test
+    void getRecommendation_whenReminderPreferenceIsNull_usesDefaultReminder() {
+        NotificationPreference preference = new NotificationPreference();
+        preference.setReminderMinutes(null);
+
+        givenData(preference, List.of());
+
+        NotificationTimingRecommendationResponse response =
+                service.getRecommendation(USER_ID);
+
+        assertEquals(15, response.currentReminderMinutes());
+        assertEquals(15, response.recommendedReminderMinutes());
+        assertEquals(0, response.executionCount());
+        assertEquals(RecommendationConfidence.NONE, response.confidence());
+    }
+
+    @Test
+    void getRecommendation_withTwoExecutions_usesLowConfidence() {
+        givenData(
+                preferenceWithReminder(15),
+                executionsWithResponseMinutes(4, 4)
+        );
+
+        NotificationTimingRecommendationResponse response =
+                service.getRecommendation(USER_ID);
+
+        assertEquals(2, response.executionCount());
+        assertEquals(RecommendationConfidence.LOW, response.confidence());
+        assertEquals(13, response.recommendedReminderMinutes());
+    }
+
+    @Test
+    void getRecommendation_withFiveExecutions_usesMediumConfidence() {
+        givenData(
+                preferenceWithReminder(15),
+                executionsWithResponseMinutes(20, 20, 20, 20, 20)
+        );
+
+        NotificationTimingRecommendationResponse response =
+                service.getRecommendation(USER_ID);
+
+        assertEquals(5, response.executionCount());
+        assertEquals(RecommendationConfidence.MEDIUM, response.confidence());
+        assertEquals(30, response.recommendedReminderMinutes());
+    }
+
+    @Test
+    void getRecommendation_whenExecutionStartsBeforeScheduledTime_excludesExecution() {
+        Notification notification = startingNotification();
+
+        TaskExecution execution = execution(
+                notification,
+                BASE_TIME.minusSeconds(60)
+        );
+
+        givenData(preferenceWithReminder(45), List.of(execution));
+
+        NotificationTimingRecommendationResponse response =
+                service.getRecommendation(USER_ID);
+
+        assertEquals(45, response.currentReminderMinutes());
+        assertEquals(45, response.recommendedReminderMinutes());
+        assertEquals(0, response.executionCount());
+        assertEquals(0.0, response.averageMinutesToStart());
+        assertEquals(RecommendationConfidence.NONE, response.confidence());
+    }
+
+
+    @Test
     void getRecommendation_countsOnlyExecutionsWithValidResponseTimes() {
         List<TaskExecution> executions = new ArrayList<>(
                 executionsWithResponseMinutes(10, 20, 30)
